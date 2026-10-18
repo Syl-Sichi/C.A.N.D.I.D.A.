@@ -9,19 +9,21 @@ import {
   FolderKanban,
   Settings,
   Terminal,
+  Zap,
 } from "lucide-react";
 import { useCandidaStore } from "@/lib/store";
 import { clsx } from "clsx";
 
 const navItems = [
   { id: "chat" as const, label: "Neural Chat", icon: MessageSquare },
+  { id: "proactive" as const, label: "Proactive Feed", icon: Zap },
   { id: "memory" as const, label: "Cognitive Memory", icon: Database },
   { id: "tasks" as const, label: "Task Engine", icon: ListTodo },
   { id: "workspace" as const, label: "Workspace", icon: FolderKanban },
 ];
 
 export default function Sidebar() {
-  const { activePanel, setActivePanel } = useCandidaStore();
+  const { activePanel, setActivePanel, suggestions } = useCandidaStore();
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-candida-border bg-candida-panel/60">
@@ -36,6 +38,7 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = activePanel === item.id;
+          const showBadge = item.id === "proactive" && suggestions.length > 0;
           return (
             <button
               key={item.id}
@@ -48,7 +51,12 @@ export default function Sidebar() {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1">{item.label}</span>
+              {showBadge && (
+                <span className="rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-rose-400">
+                  {suggestions.length}
+                </span>
+              )}
             </button>
           );
         })}
@@ -57,7 +65,7 @@ export default function Sidebar() {
       <div className="border-t border-candida-border p-3 space-y-1">
         <div className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-candida-muted">
           <Brain className="h-3.5 w-3.5" />
-          <span>Core v0.1.0</span>
+          <span>Core v0.2.0</span>
         </div>
         <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-500 hover:bg-white/5 hover:text-zinc-300 transition-colors">
           <Terminal className="h-4 w-4" />
