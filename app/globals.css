@@ -9,10 +9,35 @@ body {
   overflow: hidden;
 }
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
 .neural-panel {
   @apply bg-candida-panel border border-candida-border rounded-lg backdrop-blur-md;
 }
 
 .accent-glow {
   box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+}
+
+/* Smooth focus rings */
+*:focus-visible {
+  outline: 1px solid rgba(0, 242, 255, 0.5);
+  outline-offset: 2px;
 }
