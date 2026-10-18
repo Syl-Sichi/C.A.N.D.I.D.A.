@@ -1,102 +1,94 @@
 # C.A.N.D.I.D.A.
 **Cognitive Adaptive Neural Digital Intelligence & Decision Assistant**
 
-C.A.N.D.I.D.A. is a futuristic, modular AI dashboard designed to act as a central hub for cognitive augmentation, decision support, and digital automation.
+> Jarvis-class cognitive system — anticipates, acts, remembers, orchestrates.
 
-![Phase](https://img.shields.io/badge/Phase-1%20Core%20Interface-00f2ff?style=flat-square)
-![Stack](https://img.shields.io/badge/Stack-Next.js%2014%20%7C%20Tailwind%20%7C%20Zustand-121217?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-2%20Scaffold-00f2ff?style=flat-square)
+![Stack](https://img.shields.io/badge/Stack-Next.js%2014%20%7C%20Agent%20Core%20%7C%20Zustand-121217?style=flat-square)
 
-## 🚀 MVP Features (Phase 1 — Live)
+## Vision
 
-- **Command Center Layout** — High-density dark UI with header, sidebar, primary panel, and dual right-rail.
-- **Neural Chat Interface** — Adaptive conversation hub with typing indicators and mock context-aware replies.
-- **Cognitive Memory Panel** — Visualization of stored knowledge, projects, insights, and routines.
-- **Task & Routine Engine** — Interactive task list with status cycling, priority badges, and progress bar.
-- **Context-Aware Workspace** — Placeholder ready for Phase 2 project intelligence surfaces.
-- **Live System Status** — Clock, neural activity, integrity, and latency indicators.
+Not a chatbot dashboard. A continuous cognitive layer with:
 
-## 🛠 Tech Stack
+- **Agent loop** — Perceive → Reason → Plan → Act → Observe → Remember → Respond
+- **Memory tiers** — Working · Episodic · Semantic · Procedural
+- **Omni-Link** — Uniform interface for LLM, GitHub, search, browser, voice, IoT
+- **Proactive feed** — Suggestions ranked by context, memory, and urgency
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 14 (App Router), React 18 |
-| Styling | Tailwind CSS, custom candida theme |
-| Motion | Framer Motion |
-| Icons | Lucide React |
-| State | Zustand |
-| Deployment | Vercel (target) |
+Full design: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
-## 🗺 Architecture & Roadmap
+## Current Status
 
-### Phase 1: Core Interface ✅
-- [x] Project scaffolding and theme
-- [x] Command Center layout (Header + Sidebar + multi-panel)
-- [x] Neural Chat with mock adaptive responses
-- [x] Cognitive Memory panel
-- [x] Task & Routine Engine
-- [x] System status bar & live clock
+| Layer | Status |
+|-------|--------|
+| Command Center UI | ✅ Live |
+| Neural Chat → `/api/chat` | ✅ Wired (mock provider) |
+| Cognitive Memory (tiers + strength) | ✅ Live |
+| Task & Routine Engine | ✅ Live |
+| Proactive Feed | ✅ Live |
+| Voice input UI | ✅ Placeholder (Phase 4 STT) |
+| Agent types + provider registry | ✅ Scaffold |
+| Real LLM / tools / vector memory | 🔜 Phase 2–3 |
 
-### Phase 2: Intelligence Integration
-- [ ] Connection to LLM providers (OpenAI / Anthropic / local)
-- [ ] Local / vector memory storage
-- [ ] Basic tool-calling framework
-- [ ] Persistent chat history
+## Tech Stack
 
-### Phase 3: The "Omni-Link" System
-- [ ] **Web Search** — Real-time information retrieval
-- [ ] **GitHub Integration** — Codebase awareness and automation
-- [ ] **Browser Control** — Autonomous web interaction
-- [ ] **Smart-Home / IoT** — Device control via API
+- **Frontend:** Next.js 14 App Router, React 18, Tailwind, Framer Motion, Lucide
+- **State:** Zustand
+- **Agent core:** `lib/agent` (types, mock provider, `runChat`)
+- **API:** `POST /api/chat`
 
-## 📁 Project Structure
+## Quick Start
+
+```bash
+git clone https://github.com/Syl-Sichi/C.A.N.D.I.D.A..git
+cd C.A.N.D.I.D.A.
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+Chat hits the agent API. Provider is **mock** until you register OpenAI, Anthropic, or K.O.S.I.
+
+## Project Structure
 
 ```
-C.A.N.D.I.D.A./
 ├── app/
-│   ├── globals.css
+│   ├── api/chat/route.ts    # Agent chat endpoint
 │   ├── layout.tsx
-│   └── page.tsx          # Command Center
+│   ├── page.tsx             # Command Center
+│   └── globals.css
 ├── components/
 │   ├── Header.tsx
 │   ├── Sidebar.tsx
 │   ├── NeuralChat.tsx
 │   ├── MemoryPanel.tsx
-│   └── TaskEngine.tsx
+│   ├── TaskEngine.tsx
+│   └── ProactiveFeed.tsx
 ├── lib/
-│   └── store.ts          # Zustand state
-├── package.json
-├── tailwind.config.js
-└── tsconfig.json
+│   ├── store.ts
+│   └── agent/
+│       ├── types.ts         # OmniLink, tools, LLM, memory contracts
+│       ├── index.ts         # Provider registry + runChat
+│       └── providers/mock.ts
+├── docs/
+│   └── ARCHITECTURE.md      # Jarvis north star
+└── package.json
 ```
 
-## 🛠 Setup Instructions
+## Roadmap
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Syl-Sichi/C.A.N.D.I.D.A..git
-   cd C.A.N.D.I.D.A.
-   ```
+1. **Phase 1** ✅ — Cockpit (UI, mock chat, memory, tasks)
+2. **Phase 2** 🔄 — Brain (real LLM, working memory, tool-calling skeleton) — *in progress*
+3. **Phase 3** — Nervous system (Omni-Links: GitHub, search, …)
+4. **Phase 4** — Autonomy (background agents, voice, routines)
+5. **Phase 5** — Jarvis (multi-agent, ambient, full tool mesh)
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+## Design Language
 
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 🎨 Design Language
-
-- **Background**: `#0a0a0c`
-- **Panels**: `#121217`
-- **Accent**: `#00f2ff` (cyan neural glow)
-- **Borders**: `#27272a`
-- High-density, low-noise interface optimized for focus and cognitive flow.
+- Background `#0a0a0c` · Panels `#121217` · Accent `#00f2ff`
+- High-density, low-noise — built for cognitive flow
 
 ---
 
-Built for cognitive augmentation — not just another chatbot.
+Built for cognitive augmentation. Not just another chatbot.
