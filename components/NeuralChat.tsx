@@ -6,17 +6,15 @@ import { useCandidaStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx } from "clsx";
 
-const MOCK_REPLIES = [
-  "Directive acknowledged. Cross-referencing memory tiers... Pattern suggests prioritizing the K.O.S.I. LLM link next.",
-  "I've aligned that with your semantic and episodic nodes. Shall I queue it in the Task Engine or expand the plan?",
-  "System integrity optimal. Proactive feed has related suggestions if you want to surface them.",
-  "Understood. Ready for multi-step reasoning, tool use, or automation directives once Phase 2 is live.",
-  "Neural pathways aligned. Architecture is locked to Jarvis-class. Awaiting your next move.",
-];
-
 export default function NeuralChat() {
-  const { messages, addMessage, isListening, setListening, agentActivity } =
-    useCandidaStore();
+  const {
+    messages,
+    addMessage,
+    isListening,
+    setListening,
+    agentActivity,
+    setAgentActivity,
+  } = useCandidaStore();
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -25,32 +23,57 @@ export default function NeuralChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
     if (!text || isTyping) return;
 
     addMessage({ role: "user", content: text });
     setInput("");
     setIsTyping(true);
+    setAgentActivity("Reasoning…");
 
-    setTimeout(() => {
-      const reply =
-        MOCK_REPLIES[Math.floor(Math.random() * MOCK_REPLIES.length)];
-      addMessage({ role: "assistant", content: reply });
+    try {
+      // Build history for the API (exclude pure system for cleaner context)
+      const history = [
+        ...messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({ role: m.role, content: m.content })),
+        { role: "user" as const, content: text },
+      ];
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      if (!res.ok) throw new Error(`API ${res.status}`);
+
+      const data = await res.json();
+      addMessage({
+        role: "assistant",
+        content: data.content ?? "No response from agent core.",
+      });
+    } catch {
+      addMessage({
+        role: "assistant",
+        content:
+          "Agent core unreachable. Check that the dev server is running and /api/chat is healthy.",
+      });
+    } finally {
       setIsTyping(false);
-    }, 900 + Math.random() * 800);
+      setAgentActivity(null);
+    }
   };
 
   const toggleVoice = () => {
     if (isListening) {
       setListening(false);
-      // Simulate end of voice input
       if (!input) {
         setInput("Voice capture placeholder — STT will land in Phase 4");
       }
     } else {
       setListening(true);
-      // Auto-stop mock after 3s
       setTimeout(() => setListening(false), 3000);
     }
   };
@@ -68,7 +91,7 @@ export default function NeuralChat() {
           </span>
         )}
         <span className="ml-auto text-[10px] uppercase tracking-widest text-candida-muted">
-          Context-aware · Adaptive
+          Agent API · Phase 2
         </span>
       </div>
 
@@ -88,7 +111,7 @@ export default function NeuralChat() {
                 </div>
               )}
               <div
-                className={`max-w-[75%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed ${
+                className={`max-w-[75%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
                     ? "bg-candida-accent/15 border border-candida-accent/25 text-zinc-100"
                     : msg.role === "system"
