@@ -5,8 +5,8 @@ import {
   BarChart3,
   BookOpen,
   ExternalLink,
+  Hash,
   Layers,
-  Source,
   Video,
   X,
 } from "lucide-react";
@@ -160,7 +160,7 @@ export default function ResearchReport({ data, onClose }: Props) {
                   <Video className="h-3.5 w-3.5 text-candida-magenta" />
                 )}
                 {block.type === "stat" && (
-                  <Source className="h-3.5 w-3.5 text-candida-rose" />
+                  <Hash className="h-3.5 w-3.5 text-candida-rose" />
                 )}
               </div>
 
