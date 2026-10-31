@@ -11,152 +11,222 @@ type LivingLogoProps = {
 };
 
 const sizes = {
-  sm: 48,
-  md: 72,
-  lg: 120,
-  xl: 180,
+  sm: 56,
+  md: 88,
+  lg: 140,
+  xl: 220,
 };
 
 export default function LivingLogo({
   size = "md",
-  label = "C.A.N.D.I.D.A.",
+  label = "CANDIDA",
   active = true,
   className,
 }: LivingLogoProps) {
   const px = sizes[size];
-  const center = px / 2;
+  const display =
+    label.length > 12
+      ? label
+          .split(".")
+          .filter(Boolean)
+          .map((s) => s[0])
+          .join("")
+      : label.replace(/\./g, "");
 
   return (
     <div
       className={cn("relative flex items-center justify-center", className)}
-      style={{ width: px, height: px }}
+      style={{
+        width: px * 1.35,
+        height: px * 1.15,
+        perspective: px * 3,
+      }}
     >
-      {/* Outer orbital ring */}
-      <motion.div
-        className="absolute inset-0 rounded-full border border-candida-magenta/30"
-        style={{
-          boxShadow: active
-            ? "0 0 28px rgba(255, 45, 106, 0.35), inset 0 0 20px rgba(255, 45, 106, 0.08)"
-            : undefined,
-        }}
-        animate={active ? { rotate: 360 } : {}}
-        transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-      >
-        {/* Tick marks */}
-        {Array.from({ length: 24 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-0 h-1.5 w-px -translate-x-1/2 bg-candida-magenta/40"
-            style={{
-              transformOrigin: `0 ${center}px`,
-              transform: `rotate(${i * 15}deg) translateY(0)`,
-            }}
-          />
-        ))}
-      </motion.div>
-
-      {/* Mid orbital ring */}
-      <motion.div
-        className="absolute rounded-full border border-candida-accent/25"
-        style={{
-          inset: px * 0.12,
-          boxShadow: active ? "0 0 16px rgba(0, 242, 255, 0.2)" : undefined,
-        }}
-        animate={active ? { rotate: -360 } : {}}
-        transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
-      >
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-0 h-1 w-0.5 -translate-x-1/2 rounded-full bg-candida-accent/50"
-            style={{
-              transformOrigin: `0 ${(px * 0.76) / 2}px`,
-              transform: `rotate(${i * 30}deg)`,
-            }}
-          />
-        ))}
-      </motion.div>
-
-      {/* Inner scanning arc */}
-      <motion.div
-        className="absolute rounded-full"
-        style={{
-          inset: px * 0.22,
-          background: `conic-gradient(from 0deg, transparent 0deg, rgba(255, 45, 106, 0.55) 40deg, transparent 80deg)`,
-          mask: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
-          WebkitMask:
-            "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
-        }}
-        animate={active ? { rotate: 360 } : {}}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
-      />
-
-      {/* Core glow */}
+      {/* 3D scene — rings separated in depth like ROSE open */}
       <div
-        className={cn(
-          "absolute rounded-full",
-          active ? "rose-glow" : ""
-        )}
+        className="relative"
         style={{
-          inset: px * 0.28,
-          background:
-            "radial-gradient(circle, rgba(255, 45, 106, 0.25) 0%, rgba(255, 45, 106, 0.08) 45%, transparent 70%)",
-        }}
-      />
-
-      {/* Core disc */}
-      <div
-        className="absolute flex items-center justify-center rounded-full border border-candida-magenta/60 bg-candida-bg/90"
-        style={{
-          inset: px * 0.32,
-          boxShadow: active
-            ? "0 0 24px rgba(255, 45, 106, 0.5), inset 0 0 12px rgba(255, 45, 106, 0.15)"
-            : "inset 0 0 8px rgba(255, 45, 106, 0.1)",
+          width: px,
+          height: px,
+          transformStyle: "preserve-3d",
+          transform: "rotateX(12deg)",
         }}
       >
-        <span
-          className="font-bold tracking-tighter text-white"
+        {/* Far ring — deepest */}
+        <motion.div
+          className="absolute inset-0 rounded-full border border-white/15"
           style={{
-            fontSize: Math.max(9, px * 0.11),
-            textShadow: active ? "0 0 12px rgba(255, 77, 141, 0.9)" : undefined,
-            letterSpacing: "0.04em",
+            transform: `translateZ(${-px * 0.28}px) scale(1.18)`,
+            boxShadow: active ? "0 0 40px rgba(255,45,106,0.12)" : undefined,
+          }}
+          animate={active ? { rotateZ: 360 } : {}}
+          transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+        >
+          {Array.from({ length: 32 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute left-1/2 top-0 h-1 w-px -translate-x-1/2 bg-white/25"
+              style={{
+                transformOrigin: `center ${px / 2}px`,
+                transform: `rotate(${i * 11.25}deg)`,
+              }}
+            />
+          ))}
+        </motion.div>
+
+        {/* Outer ring */}
+        <motion.div
+          className="absolute inset-0 rounded-full border-2 border-candida-magenta/50"
+          style={{
+            transform: `translateZ(${-px * 0.12}px)`,
+            boxShadow: active
+              ? "0 0 32px rgba(255,45,106,0.45), inset 0 0 24px rgba(255,45,106,0.1)"
+              : undefined,
+          }}
+          animate={active ? { rotateZ: -360 } : {}}
+          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+        >
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute left-1/2 top-0 h-2 w-0.5 -translate-x-1/2 rounded-full bg-candida-magenta/70"
+              style={{
+                transformOrigin: `center ${px / 2}px`,
+                transform: `rotate(${i * 18}deg)`,
+              }}
+            />
+          ))}
+        </motion.div>
+
+        {/* Mid ring — cyan */}
+        <motion.div
+          className="absolute rounded-full border border-candida-accent/40"
+          style={{
+            inset: px * 0.1,
+            transform: `translateZ(${px * 0.02}px)`,
+            boxShadow: active ? "0 0 18px rgba(0,242,255,0.25)" : undefined,
+          }}
+          animate={active ? { rotateZ: 360 } : {}}
+          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+        />
+
+        {/* Laser crosshair lines (ROSE-style) */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ transform: `translateZ(${px * 0.05}px)` }}
+        >
+          <div
+            className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent 5%, rgba(255,45,106,0.85) 35%, rgba(255,45,106,0.85) 65%, transparent 95%)",
+            }}
+          />
+          <div
+            className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2"
+            style={{
+              background:
+                "linear-gradient(180deg, transparent 5%, rgba(255,45,106,0.5) 40%, rgba(255,45,106,0.5) 60%, transparent 95%)",
+            }}
+          />
+        </div>
+
+        {/* Inner scan ring */}
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            inset: px * 0.2,
+            transform: `translateZ(${px * 0.1}px)`,
+            background:
+              "conic-gradient(from 0deg, transparent 0deg, rgba(255,45,106,0.7) 50deg, transparent 100deg)",
+            mask: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
+            WebkitMask:
+              "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
+          }}
+          animate={active ? { rotateZ: 360 } : {}}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
+        />
+
+        {/* Core glow */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            inset: px * 0.26,
+            transform: `translateZ(${px * 0.16}px)`,
+            background:
+              "radial-gradient(circle, rgba(255,45,106,0.35) 0%, rgba(255,45,106,0.1) 50%, transparent 70%)",
+            boxShadow: active ? "0 0 50px rgba(255,77,141,0.55)" : undefined,
+          }}
+        />
+
+        {/* Core disc + ROSE-style wordmark */}
+        <div
+          className="absolute flex items-center justify-center rounded-full border border-candida-magenta/70 bg-[#0a0a0c]/95"
+          style={{
+            inset: px * 0.3,
+            transform: `translateZ(${px * 0.22}px)`,
+            boxShadow: active
+              ? "0 0 28px rgba(255,45,106,0.6), inset 0 0 16px rgba(255,45,106,0.2)"
+              : "inset 0 0 8px rgba(255,45,106,0.12)",
           }}
         >
-          {label.length > 10 ? label.split(".").filter(Boolean).map((s) => s[0]).join("") : label}
-        </span>
-      </div>
-
-      {/* Floating particles */}
-      {active &&
-        Array.from({ length: 6 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute h-1 w-1 rounded-full bg-candida-magenta"
+          <span
             style={{
-              left: center,
-              top: center,
-              boxShadow: "0 0 6px rgba(255, 45, 106, 0.9)",
+              fontFamily: "'Russo One', 'Orbitron', sans-serif",
+              fontSize: Math.max(11, px * 0.13),
+              letterSpacing: "0.06em",
+              color: "#fff",
+              textShadow: active
+                ? "0 0 14px rgba(255,77,141,1), 0 0 28px rgba(255,45,106,0.7)"
+                : "0 0 6px rgba(255,45,106,0.4)",
+              textTransform: "uppercase",
+              fontWeight: 400,
+              transform: "skewX(-4deg)",
             }}
-            animate={{
-              x: [
-                Math.cos((i / 6) * Math.PI * 2) * (px * 0.38),
-                Math.cos((i / 6) * Math.PI * 2 + 0.8) * (px * 0.42),
-                Math.cos((i / 6) * Math.PI * 2) * (px * 0.38),
-              ],
-              y: [
-                Math.sin((i / 6) * Math.PI * 2) * (px * 0.38),
-                Math.sin((i / 6) * Math.PI * 2 + 0.8) * (px * 0.42),
-                Math.sin((i / 6) * Math.PI * 2) * (px * 0.38),
-              ],
-              opacity: [0.4, 1, 0.4],
-            }}
-            transition={{
-              duration: 3 + i * 0.3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
+          >
+            {display}
+          </span>
+        </div>
+
+        {/* Floating particles on outer path */}
+        {active &&
+          Array.from({ length: 8 }).map((_, i) => {
+            const angle = (i / 8) * Math.PI * 2;
+            const r = px * 0.48;
+            return (
+              <motion.div
+                key={i}
+                className="absolute h-1.5 w-1.5 rounded-full bg-candida-magenta"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  marginLeft: -3,
+                  marginTop: -3,
+                  boxShadow: "0 0 8px rgba(255,45,106,1)",
+                  transform: `translateZ(${px * 0.08}px)`,
+                }}
+                animate={{
+                  x: [
+                    Math.cos(angle) * r,
+                    Math.cos(angle + 0.9) * (r * 1.05),
+                    Math.cos(angle) * r,
+                  ],
+                  y: [
+                    Math.sin(angle) * r * 0.85,
+                    Math.sin(angle + 0.9) * (r * 0.9),
+                    Math.sin(angle) * r * 0.85,
+                  ],
+                  opacity: [0.35, 1, 0.35],
+                }}
+                transition={{
+                  duration: 2.8 + i * 0.25,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            );
+          })}
+      </div>
     </div>
   );
 }
