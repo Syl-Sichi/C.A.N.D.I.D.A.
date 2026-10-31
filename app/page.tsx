@@ -6,9 +6,9 @@ import NeuralChat from "@/components/NeuralChat";
 import MemoryPanel from "@/components/MemoryPanel";
 import TaskEngine from "@/components/TaskEngine";
 import ProactiveFeed from "@/components/ProactiveFeed";
-import ResearchReport, { DEMO_REPORT } from "@/components/ResearchReport";
+import AgentStage from "@/components/AgentStage";
 import { useCandidaStore } from "@/lib/store";
-import { FolderKanban, Layers, Sparkles } from "lucide-react";
+import { FolderKanban, Layers } from "lucide-react";
 
 export default function CommandCenter() {
   const {
@@ -16,54 +16,50 @@ export default function CommandCenter() {
     memories,
     tasks,
     suggestions,
-    researchReport,
-    openResearchReport,
-    closeResearchReport,
   } = useCandidaStore();
   const activeTasks = tasks.filter((t) => t.status === "running").length;
 
-  // Full-screen research mode takes over the main area
-  if (activePanel === "research" && researchReport) {
-    return (
-      <div className="flex h-screen flex-col overflow-hidden bg-neural-grid">
-        <Header />
-        <div className="flex-1 overflow-hidden">
-          <ResearchReport data={researchReport} onClose={closeResearchReport} />
-        </div>
-      </div>
-    );
-  }
+  // Agent Stage (ROSE-style HUD) is the default home
+  const isStage = activePanel === "chat" || activePanel === "research";
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-neural-grid">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#030305]">
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
         <main className="flex flex-1 overflow-hidden">
-          <section className="flex flex-1 flex-col border-r border-candida-border bg-candida-bg/40">
-            {activePanel === "chat" && <NeuralChat />}
-            {activePanel === "proactive" && <ProactiveFeed />}
-            {activePanel === "memory" && <MemoryPanel />}
-            {activePanel === "tasks" && <TaskEngine />}
-            {activePanel === "workspace" && <WorkspacePlaceholder onDemo={() => openResearchReport(DEMO_REPORT)} />}
-          </section>
+          {isStage && (
+            <section className="flex flex-1 flex-col">
+              <AgentStage />
+            </section>
+          )}
 
-          {activePanel === "chat" && (
-            <aside className="hidden w-80 shrink-0 flex-col border-l border-candida-border lg:flex">
-              <div className="h-1/2 border-b border-candida-border overflow-hidden">
-                <ProactiveFeed />
-              </div>
-              <div className="h-1/2 overflow-hidden">
-                <MemoryPanel />
-              </div>
-            </aside>
+          {activePanel === "proactive" && (
+            <section className="flex flex-1 flex-col border-r border-candida-border bg-candida-bg/40">
+              <ProactiveFeed />
+            </section>
+          )}
+          {activePanel === "memory" && (
+            <section className="flex flex-1 flex-col border-r border-candida-border bg-candida-bg/40">
+              <MemoryPanel />
+            </section>
+          )}
+          {activePanel === "tasks" && (
+            <section className="flex flex-1 flex-col border-r border-candida-border bg-candida-bg/40">
+              <TaskEngine />
+            </section>
+          )}
+          {activePanel === "workspace" && (
+            <section className="flex flex-1 flex-col border-r border-candida-border bg-candida-bg/40">
+              <WorkspacePlaceholder />
+            </section>
           )}
         </main>
       </div>
 
-      <footer className="flex items-center justify-between border-t border-candida-border bg-candida-panel/80 px-4 py-1.5 text-[10px] text-candida-muted backdrop-blur-sm">
+      <footer className="flex items-center justify-between border-t border-candida-border/80 bg-black/80 px-4 py-1.5 text-[10px] text-candida-muted backdrop-blur-sm">
         <div className="flex items-center gap-4">
           <span>
             Module: <span className="text-zinc-400">{activePanel}</span>
@@ -79,22 +75,15 @@ export default function CommandCenter() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => openResearchReport(DEMO_REPORT)}
-            className="flex items-center gap-1.5 rounded border border-candida-magenta/40 bg-candida-magenta/10 px-2 py-0.5 text-[10px] text-candida-magenta transition hover:bg-candida-magenta/20"
-          >
-            <Sparkles className="h-3 w-3" />
-            Demo Research HUD
-          </button>
-          <span className="hidden sm:inline">C.A.N.D.I.D.A. · ROSE language · v0.3.0</span>
-          <span className="text-candida-accent">v0.3.0</span>
+          <span className="hidden sm:inline">C.A.N.D.I.D.A. · ROSE HUD · v0.4.0</span>
+          <span className="text-candida-magenta">v0.4.0</span>
         </div>
       </footer>
     </div>
   );
 }
 
-function WorkspacePlaceholder({ onDemo }: { onDemo: () => void }) {
+function WorkspacePlaceholder() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-candida-border bg-candida-panel magenta-glow">
@@ -107,13 +96,10 @@ function WorkspacePlaceholder({ onDemo }: { onDemo: () => void }) {
           context streams in Phase 2–3.
         </p>
       </div>
-      <button
-        onClick={onDemo}
-        className="flex items-center gap-2 rounded-full border border-candida-magenta/50 bg-candida-magenta/10 px-4 py-1.5 text-xs text-candida-magenta transition hover:bg-candida-magenta/20"
-      >
+      <div className="flex items-center gap-2 rounded-full border border-candida-border bg-candida-panel px-4 py-1.5 text-xs text-candida-muted">
         <Layers className="h-3.5 w-3.5" />
-        Launch Research Report Demo
-      </button>
+        Phase 2+ — Intelligence Integration
+      </div>
     </div>
   );
 }

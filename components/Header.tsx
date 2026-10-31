@@ -34,14 +34,14 @@ export default function Header() {
       : "text-red-400";
 
   return (
-    <header className="flex items-center justify-between border-b border-candida-border bg-candida-panel/80 px-5 py-2.5 backdrop-blur-md">
+    <header className="flex items-center justify-between border-b border-candida-border/80 bg-black/70 px-5 py-2 backdrop-blur-md">
       <div className="flex items-center gap-3">
         <LivingLogo size="sm" label="CANDIDA" active={systemStatus !== "offline"} />
         <div>
           <h1 className="text-sm font-semibold tracking-wider text-white">
             C.A.N.D.I.D.A.
           </h1>
-          <p className="text-[10px] uppercase tracking-widest text-candida-muted">
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500">
             {agentActivity ? agentActivity : "Cognitive Adaptive Neural Digital Intelligence"}
           </p>
         </div>
@@ -54,9 +54,9 @@ export default function Header() {
           <StatusPill icon={Zap} label="Latency" value="12ms" />
         </div>
 
-        <div className="flex items-center gap-2 rounded-md border border-candida-border bg-candida-bg/60 px-3 py-1.5">
+        <div className="flex items-center gap-2 rounded-md border border-candida-border/80 bg-black/50 px-3 py-1.5">
           <span
-            className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+            className={`h-1.5 w-1.5 animate-pulse rounded-full ${
               statusColor === "text-emerald-400"
                 ? "bg-emerald-400"
                 : statusColor === "text-amber-400"
@@ -87,10 +87,10 @@ function StatusPill({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs text-candida-muted">
+    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
       <Icon className="h-3.5 w-3.5 text-candida-accent/70" />
       <span>{label}</span>
-      <span className="font-medium text-zinc-300">{value}</span>
+      <span className="font-medium text-zinc-400">{value}</span>
     </div>
   );
 }
