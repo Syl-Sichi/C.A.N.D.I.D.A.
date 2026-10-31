@@ -6,6 +6,7 @@ import { Send, X } from "lucide-react";
 import LivingLogo from "./LivingLogo";
 import ResearchReport, { DEMO_REPORT } from "./ResearchReport";
 import { useCandidaStore } from "@/lib/store";
+import { speakCandida } from "@/lib/speak";
 
 type StagePhase = "idle" | "listening" | "armed" | "thinking" | "answered" | "report";
 
@@ -54,6 +55,7 @@ export default function AgentStage() {
   const [micReady, setMicReady] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState<string | null>(null);
+  const [speaking, setSpeaking] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const armedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,7 +76,6 @@ export default function AgentStage() {
     setAgentActivity("Listening");
   }, [setAgentActivity, setStoreListening]);
 
-  /** Core path: real C.A.N.D.I.D.A. agent, not the ROSE demo */
   const runDirective = useCallback(
     async (raw: string) => {
       const q = stripWake(raw) || raw.trim();
@@ -85,7 +86,6 @@ export default function AgentStage() {
       setAnswer(null);
       setInterim("");
 
-      // Explicit research-report request → HUD demo (interface showcase only)
       if (wantsResearchReport(q)) {
         shouldListenRef.current = false;
         try {
@@ -103,7 +103,6 @@ export default function AgentStage() {
         return;
       }
 
-      // Normal cognitive response via agent API
       shouldListenRef.current = false;
       try {
         recognitionRef.current?.stop();
@@ -118,6 +117,7 @@ export default function AgentStage() {
 
       addMessage({ role: "user", content: q });
 
+      let content = "";
       try {
         const history = [
           ...messages
@@ -135,31 +135,38 @@ export default function AgentStage() {
         if (!res.ok) throw new Error(`API ${res.status}`);
 
         const data = await res.json();
-        const content =
+        content =
           data.content ??
           "I received that, but the agent core returned an empty response.";
 
         addMessage({ role: "assistant", content });
         setAnswer(content);
         setPhase("answered");
+        setStatusLine("Speaking…");
+        setAgentActivity("Speaking");
+        setSpeaking(true);
+
+        // ROSE-class voice via ElevenLabs
+        await speakCandida(content);
+        setSpeaking(false);
         setStatusLine("Response ready");
         setAgentActivity(null);
       } catch {
-        const fallback =
+        content =
           "Agent core unreachable. Check that the dev server is running and /api/chat is healthy.";
-        addMessage({ role: "assistant", content: fallback });
-        setAnswer(fallback);
+        addMessage({ role: "assistant", content });
+        setAnswer(content);
         setPhase("answered");
         setStatusLine("Connection issue");
         setAgentActivity(null);
+        setSpeaking(false);
       }
 
-      // Return to always-on listen after a short beat
       setTimeout(() => {
         if (phaseRef.current === "answered") {
           resumeListen();
         }
-      }, 12000);
+      }, 4000);
     },
     [
       addMessage,
@@ -178,7 +185,6 @@ export default function AgentStage() {
     [runDirective]
   );
 
-  // Always-on voice
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -350,7 +356,7 @@ export default function AgentStage() {
       <div
         className="pointer-events-none absolute inset-0 transition-all duration-700"
         style={{
-          background: isVoiceActive
+          background: isVoiceActive || speaking
             ? "radial-gradient(ellipse 55% 45% at 50% 42%, rgba(255,45,106,0.14) 0%, transparent 70%)"
             : "radial-gradient(ellipse 55% 45% at 50% 42%, rgba(255,45,106,0.06) 0%, transparent 70%)",
         }}
@@ -359,7 +365,7 @@ export default function AgentStage() {
       <motion.div
         className="relative z-10"
         animate={{
-          scale: phase === "thinking" ? 1.06 : phase === "armed" ? 1.04 : 1,
+          scale: phase === "thinking" || speaking ? 1.06 : phase === "armed" ? 1.04 : 1,
         }}
         transition={{ duration: 0.5 }}
       >
@@ -378,7 +384,9 @@ export default function AgentStage() {
             className="text-[11px] font-semibold uppercase tracking-[0.28em] text-candida-magenta/90"
             style={{ fontFamily: "'Orbitron', sans-serif" }}
           >
-            {phase === "thinking"
+            {speaking
+              ? "Speaking"
+              : phase === "thinking"
               ? "Reasoning"
               : phase === "answered"
               ? "Response"
@@ -397,13 +405,12 @@ export default function AgentStage() {
           )}
           {micReady && phase === "listening" && !voiceError && (
             <p className="mt-3 text-[10px] text-zinc-600">
-              Always listening — ask anything. Research report only if you request one.
+              Always listening — she answers and speaks (ElevenLabs).
             </p>
           )}
         </motion.div>
       </AnimatePresence>
 
-      {/* Answer surface — real agent reply */}
       <AnimatePresence>
         {(phase === "answered" || phase === "thinking") && (answer || lastQuery) && (
           <motion.div
@@ -416,7 +423,11 @@ export default function AgentStage() {
             <div className="mb-2 flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-candida-magenta">
-                  {phase === "thinking" ? "Processing" : "C.A.N.D.I.D.A."}
+                  {speaking
+                    ? "Speaking"
+                    : phase === "thinking"
+                    ? "Processing"
+                    : "C.A.N.D.I.D.A."}
                 </p>
                 {lastQuery && (
                   <p className="mt-0.5 truncate text-[11px] text-zinc-500">
@@ -424,7 +435,7 @@ export default function AgentStage() {
                   </p>
                 )}
               </div>
-              {phase === "answered" && (
+              {phase === "answered" && !speaking && (
                 <button
                   onClick={dismissAnswer}
                   className="rounded p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
