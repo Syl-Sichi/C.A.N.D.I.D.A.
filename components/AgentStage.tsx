@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import LivingLogo from "./LivingLogo";
 import ResearchReport, { DEMO_REPORT } from "./ResearchReport";
 import { useCandidaStore } from "@/lib/store";
 
-type StagePhase = "idle" | "listening" | "armed" | "working" | "report";
+type StagePhase = "idle" | "listening" | "armed" | "thinking" | "answered" | "report";
 
 const WAKE_PATTERNS = [
   /hey\s*candida/i,
@@ -31,8 +31,14 @@ function hasWake(text: string): boolean {
   return WAKE_PATTERNS.some((p) => p.test(text));
 }
 
+function wantsResearchReport(q: string): boolean {
+  return /research\s+report|full\s+report|hud\s+report|demo\s+report/i.test(q);
+}
+
 export default function AgentStage() {
   const {
+    messages,
+    addMessage,
     openResearchReport,
     closeResearchReport,
     researchReport,
@@ -43,10 +49,11 @@ export default function AgentStage() {
   const [phase, setPhase] = useState<StagePhase>("idle");
   const [input, setInput] = useState("");
   const [statusLine, setStatusLine] = useState('Say "Hey Candida"…');
-  const [progress, setProgress] = useState({ blocks: 0, sources: 0 });
   const [interim, setInterim] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [micReady, setMicReady] = useState(false);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [lastQuery, setLastQuery] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const armedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,8 +61,49 @@ export default function AgentStage() {
   const shouldListenRef = useRef(true);
   phaseRef.current = phase;
 
-  const runResearchSequence = useCallback(
-    async (query?: string) => {
+  const resumeListen = useCallback(() => {
+    shouldListenRef.current = true;
+    try {
+      recognitionRef.current?.start();
+    } catch {
+      /* may already be running */
+    }
+    setPhase("listening");
+    setStoreListening(true);
+    setStatusLine('Listening… say "Hey Candida"');
+    setAgentActivity("Listening");
+  }, [setAgentActivity, setStoreListening]);
+
+  /** Core path: real C.A.N.D.I.D.A. agent, not the ROSE demo */
+  const runDirective = useCallback(
+    async (raw: string) => {
+      const q = stripWake(raw) || raw.trim();
+      if (!q) return;
+
+      setInput("");
+      setLastQuery(q);
+      setAnswer(null);
+      setInterim("");
+
+      // Explicit research-report request → HUD demo (interface showcase only)
+      if (wantsResearchReport(q)) {
+        shouldListenRef.current = false;
+        try {
+          recognitionRef.current?.stop();
+        } catch {
+          /* ignore */
+        }
+        setStoreListening(false);
+        setPhase("thinking");
+        setStatusLine("Building research surface…");
+        setAgentActivity("Report presentation");
+        await new Promise((r) => setTimeout(r, 800));
+        openResearchReport(DEMO_REPORT);
+        setPhase("report");
+        return;
+      }
+
+      // Normal cognitive response via agent API
       shouldListenRef.current = false;
       try {
         recognitionRef.current?.stop();
@@ -64,44 +112,73 @@ export default function AgentStage() {
       }
       setStoreListening(false);
 
-      setPhase("working");
-      setStatusLine(query ? `Researching: ${query}` : "Starting research agent");
-      setAgentActivity("Research agent active");
-      setProgress({ blocks: 0, sources: 0 });
-      setInterim("");
+      setPhase("thinking");
+      setStatusLine("Reasoning…");
+      setAgentActivity("Reasoning");
 
-      const steps = [
-        { delay: 600, blocks: 0, sources: 0, line: "Starting research agent" },
-        { delay: 900, blocks: 2, sources: 8, line: "Gathering sources…" },
-        { delay: 800, blocks: 5, sources: 18, line: "Synthesizing blocks…" },
-        { delay: 700, blocks: 9, sources: 31, line: "Building report surface…" },
-        { delay: 600, blocks: 13, sources: 42, line: "Report complete" },
-      ];
+      addMessage({ role: "user", content: q });
 
-      for (const step of steps) {
-        await new Promise((r) => setTimeout(r, step.delay));
-        setProgress({ blocks: step.blocks, sources: step.sources });
-        setStatusLine(step.line);
+      try {
+        const history = [
+          ...messages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({ role: m.role, content: m.content })),
+          { role: "user" as const, content: q },
+        ];
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history }),
+        });
+
+        if (!res.ok) throw new Error(`API ${res.status}`);
+
+        const data = await res.json();
+        const content =
+          data.content ??
+          "I received that, but the agent core returned an empty response.";
+
+        addMessage({ role: "assistant", content });
+        setAnswer(content);
+        setPhase("answered");
+        setStatusLine("Response ready");
+        setAgentActivity(null);
+      } catch {
+        const fallback =
+          "Agent core unreachable. Check that the dev server is running and /api/chat is healthy.";
+        addMessage({ role: "assistant", content: fallback });
+        setAnswer(fallback);
+        setPhase("answered");
+        setStatusLine("Connection issue");
+        setAgentActivity(null);
       }
 
-      await new Promise((r) => setTimeout(r, 400));
-      openResearchReport(DEMO_REPORT);
-      setPhase("report");
-      setAgentActivity("Report presentation");
+      // Return to always-on listen after a short beat
+      setTimeout(() => {
+        if (phaseRef.current === "answered") {
+          resumeListen();
+        }
+      }, 12000);
     },
-    [openResearchReport, setAgentActivity, setStoreListening]
+    [
+      addMessage,
+      messages,
+      openResearchReport,
+      resumeListen,
+      setAgentActivity,
+      setStoreListening,
+    ]
   );
 
   const handleDirective = useCallback(
     (raw: string) => {
-      const q = stripWake(raw) || raw.trim() || "State of VR";
-      setInput("");
-      runResearchSequence(q);
+      runDirective(raw);
     },
-    [runResearchSequence]
+    [runDirective]
   );
 
-  // Always-on voice — starts as soon as mic is allowed
+  // Always-on voice
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -144,7 +221,7 @@ export default function AgentStage() {
               handleDirective(text);
             } else {
               setPhase("armed");
-              setStatusLine("Yes? Listening for directive…");
+              setStatusLine("Yes?");
               setAgentActivity("Armed");
               if (armedTimeoutRef.current) clearTimeout(armedTimeoutRef.current);
               armedTimeoutRef.current = setTimeout(() => {
@@ -169,15 +246,16 @@ export default function AgentStage() {
         setMicReady(false);
         setPhase("idle");
         setStoreListening(false);
-      } else if (event.error === "no-speech") {
-        // normal — keep going
-      } else if (event.error !== "aborted") {
+      } else if (event.error !== "aborted" && event.error !== "no-speech") {
         setVoiceError(`Voice: ${event.error}`);
       }
     };
 
     recognition.onend = () => {
-      if (shouldListenRef.current && (phaseRef.current === "listening" || phaseRef.current === "armed")) {
+      if (
+        shouldListenRef.current &&
+        (phaseRef.current === "listening" || phaseRef.current === "armed")
+      ) {
         try {
           recognition.start();
         } catch {
@@ -188,7 +266,6 @@ export default function AgentStage() {
 
     recognitionRef.current = recognition;
 
-    // Auto-start — browser may prompt for mic once
     const boot = () => {
       shouldListenRef.current = true;
       try {
@@ -200,7 +277,6 @@ export default function AgentStage() {
         setAgentActivity("Listening");
         setVoiceError(null);
       } catch {
-        // need a user gesture in some browsers — retry on first click anywhere
         const once = () => {
           try {
             recognition.start();
@@ -222,7 +298,6 @@ export default function AgentStage() {
       }
     };
 
-    // slight delay so page paints first
     const t = setTimeout(boot, 400);
 
     return () => {
@@ -241,30 +316,22 @@ export default function AgentStage() {
     if (researchReport) setPhase("report");
   }, [researchReport]);
 
-  // Resume listening after closing report
-  const resumeListen = useCallback(() => {
-    shouldListenRef.current = true;
-    try {
-      recognitionRef.current?.start();
-      setPhase("listening");
-      setStoreListening(true);
-      setStatusLine('Listening… say "Hey Candida"');
-      setAgentActivity("Listening");
-    } catch {
-      setPhase("listening");
-    }
-  }, [setAgentActivity, setStoreListening]);
-
   const handleSubmit = () => {
-    const q = input.trim() || "State of VR";
+    const q = input.trim();
+    if (!q) return;
     setInput("");
-    runResearchSequence(q);
+    runDirective(q);
   };
 
   const handleCloseReport = () => {
     closeResearchReport();
-    setProgress({ blocks: 0, sources: 0 });
     setAgentActivity(null);
+    resumeListen();
+  };
+
+  const dismissAnswer = () => {
+    setAnswer(null);
+    setLastQuery(null);
     resumeListen();
   };
 
@@ -292,7 +359,7 @@ export default function AgentStage() {
       <motion.div
         className="relative z-10"
         animate={{
-          scale: phase === "working" ? 1.06 : phase === "armed" ? 1.04 : 1,
+          scale: phase === "thinking" ? 1.06 : phase === "armed" ? 1.04 : 1,
         }}
         transition={{ duration: 0.5 }}
       >
@@ -311,8 +378,10 @@ export default function AgentStage() {
             className="text-[11px] font-semibold uppercase tracking-[0.28em] text-candida-magenta/90"
             style={{ fontFamily: "'Orbitron', sans-serif" }}
           >
-            {phase === "working"
-              ? "Research // Active"
+            {phase === "thinking"
+              ? "Reasoning"
+              : phase === "answered"
+              ? "Response"
               : phase === "armed"
               ? "Armed"
               : phase === "listening"
@@ -328,46 +397,57 @@ export default function AgentStage() {
           )}
           {micReady && phase === "listening" && !voiceError && (
             <p className="mt-3 text-[10px] text-zinc-600">
-              Always listening — no buttons. Just speak.
+              Always listening — ask anything. Research report only if you request one.
             </p>
           )}
         </motion.div>
       </AnimatePresence>
 
+      {/* Answer surface — real agent reply */}
       <AnimatePresence>
-        {phase === "working" && (
+        {(phase === "answered" || phase === "thinking") && (answer || lastQuery) && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-28 left-1/2 z-20 w-72 -translate-x-1/2 rounded-lg border border-candida-border bg-candida-panel/90 p-4 backdrop-blur-md"
-            style={{ boxShadow: "0 0 40px rgba(255, 45, 106, 0.15)" }}
+            exit={{ opacity: 0, y: 12 }}
+            className="absolute bottom-28 left-1/2 z-20 w-[min(92vw,28rem)] -translate-x-1/2 rounded-xl border border-candida-border bg-candida-panel/95 p-4 backdrop-blur-md"
+            style={{ boxShadow: "0 0 48px rgba(255, 45, 106, 0.12)" }}
           >
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-candida-magenta">
-                Research // Active
-              </span>
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-candida-magenta" />
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-candida-magenta">
+                  {phase === "thinking" ? "Processing" : "C.A.N.D.I.D.A."}
+                </p>
+                {lastQuery && (
+                  <p className="mt-0.5 truncate text-[11px] text-zinc-500">
+                    Re: {lastQuery}
+                  </p>
+                )}
+              </div>
+              {phase === "answered" && (
+                <button
+                  onClick={dismissAnswer}
+                  className="rounded p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-            <p className="text-xs font-medium text-zinc-200">STATE OF VR</p>
-            <p className="mt-0.5 text-[10px] text-candida-muted">{statusLine}</p>
-            <div className="mt-3 h-1 overflow-hidden rounded-full bg-zinc-800">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-candida-magenta to-candida-accent"
-                initial={{ width: "0%" }}
-                animate={{ width: `${(progress.blocks / 13) * 100}%` }}
-                transition={{ duration: 0.4 }}
-              />
-            </div>
-            <div className="mt-2 flex justify-between text-[10px] text-candida-muted">
-              <span>{progress.blocks} blocks</span>
-              <span>{progress.sources} sources</span>
-            </div>
+            {phase === "thinking" && !answer ? (
+              <div className="flex items-center gap-2 py-3">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-candida-magenta [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-candida-magenta [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-candida-magenta [animation-delay:300ms]" />
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">
+                {answer}
+              </p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Text fallback only — no mic button */}
       {(phase === "idle" || phase === "listening" || phase === "armed") && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -391,7 +471,7 @@ export default function AgentStage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="Or type a directive…"
+              placeholder="Ask Candida anything…"
               className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 outline-none"
             />
             <button
