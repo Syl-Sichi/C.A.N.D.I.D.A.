@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ResearchReportData } from "@/components/ResearchReport";
 
 export type ChatMessage = {
   id: string;
@@ -16,7 +17,7 @@ export type MemoryItem = {
   tier: MemoryTier;
   preview: string;
   updatedAt: string;
-  strength?: number; // 0-100 relevance/activation
+  strength?: number;
 };
 
 export type TaskItem = {
@@ -39,16 +40,19 @@ interface CandidaState {
   memories: MemoryItem[];
   tasks: TaskItem[];
   suggestions: Suggestion[];
-  activePanel: "chat" | "memory" | "tasks" | "workspace" | "proactive";
+  activePanel: "chat" | "memory" | "tasks" | "workspace" | "proactive" | "research";
   systemStatus: "online" | "syncing" | "offline";
   isListening: boolean;
   agentActivity: string | null;
+  researchReport: ResearchReportData | null;
   addMessage: (msg: Omit<ChatMessage, "id" | "timestamp">) => void;
   setActivePanel: (panel: CandidaState["activePanel"]) => void;
   toggleTask: (id: string) => void;
   dismissSuggestion: (id: string) => void;
   setListening: (v: boolean) => void;
   setAgentActivity: (activity: string | null) => void;
+  openResearchReport: (data: ResearchReportData) => void;
+  closeResearchReport: () => void;
 }
 
 const initialMemories: MemoryItem[] = [
@@ -102,7 +106,7 @@ const initialMemories: MemoryItem[] = [
     title: "Working Context",
     type: "project",
     tier: "working",
-    preview: "Active session: architecture formalized, cockpit deepening in progress.",
+    preview: "Active session: ROSE visual language integrated. Research HUD live.",
     updatedAt: "Now",
     strength: 100,
   },
@@ -111,7 +115,7 @@ const initialMemories: MemoryItem[] = [
 const initialTasks: TaskItem[] = [
   { id: "t1", title: "Initialize Command Center UI", status: "completed", priority: "high" },
   { id: "t2", title: "Formalize Jarvis architecture", status: "completed", priority: "high" },
-  { id: "t3", title: "Deepen cockpit (proactive + voice)", status: "running", priority: "high" },
+  { id: "t3", title: "ROSE visual language (logo + report)", status: "completed", priority: "high" },
   { id: "t4", title: "Connect LLM providers", status: "pending", priority: "high" },
   { id: "t5", title: "Tool-calling skeleton", status: "pending", priority: "medium" },
   { id: "t6", title: "Vector memory backend", status: "pending", priority: "medium" },
@@ -135,9 +139,9 @@ const initialSuggestions: Suggestion[] = [
   },
   {
     id: "s3",
-    title: "Review architecture decisions",
-    reason: "New ARCHITECTURE.md committed. Suggest encoding key principles into semantic memory.",
-    action: "Encode principles",
+    title: "Demo research report",
+    reason: "ROSE-style HUD is live. Trigger a full research presentation.",
+    action: "Open report",
     urgency: "low",
   },
 ];
@@ -148,7 +152,7 @@ export const useCandidaStore = create<CandidaState>((set) => ({
       id: "sys-1",
       role: "system",
       content:
-        "C.A.N.D.I.D.A. online. Cognitive systems nominal. Architecture locked to Jarvis-class target. Awaiting directive.",
+        "C.A.N.D.I.D.A. online. Cognitive systems nominal. ROSE visual language loaded. Awaiting directive.",
       timestamp: new Date(),
     },
   ],
@@ -159,6 +163,7 @@ export const useCandidaStore = create<CandidaState>((set) => ({
   systemStatus: "online",
   isListening: false,
   agentActivity: null,
+  researchReport: null,
   addMessage: (msg) =>
     set((state) => ({
       messages: [
@@ -193,4 +198,18 @@ export const useCandidaStore = create<CandidaState>((set) => ({
     })),
   setListening: (v) => set({ isListening: v }),
   setAgentActivity: (activity) => set({ agentActivity: activity }),
+  openResearchReport: (data) =>
+    set({
+      researchReport: data,
+      activePanel: "research",
+      agentActivity: "Research report presentation",
+      systemStatus: "syncing",
+    }),
+  closeResearchReport: () =>
+    set({
+      researchReport: null,
+      activePanel: "chat",
+      agentActivity: null,
+      systemStatus: "online",
+    }),
 }));

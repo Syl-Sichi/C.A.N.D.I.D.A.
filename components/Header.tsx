@@ -1,11 +1,13 @@
 "use client";
 
-import { Activity, Cpu, Shield, Zap } from "lucide-react";
+import { Activity, Shield, Zap } from "lucide-react";
 import { useCandidaStore } from "@/lib/store";
 import { useEffect, useState } from "react";
+import LivingLogo from "./LivingLogo";
 
 export default function Header() {
   const systemStatus = useCandidaStore((s) => s.systemStatus);
+  const agentActivity = useCandidaStore((s) => s.agentActivity);
   const [time, setTime] = useState("");
 
   useEffect(() => {
@@ -32,18 +34,15 @@ export default function Header() {
       : "text-red-400";
 
   return (
-    <header className="flex items-center justify-between border-b border-candida-border bg-candida-panel/80 px-5 py-3 backdrop-blur-md">
+    <header className="flex items-center justify-between border-b border-candida-border bg-candida-panel/80 px-5 py-2.5 backdrop-blur-md">
       <div className="flex items-center gap-3">
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-candida-accent/40 bg-candida-accent/10 accent-glow">
-          <Cpu className="h-5 w-5 text-candida-accent" />
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        </div>
+        <LivingLogo size="sm" label="CANDIDA" active={systemStatus !== "offline"} />
         <div>
           <h1 className="text-sm font-semibold tracking-wider text-white">
             C.A.N.D.I.D.A.
           </h1>
           <p className="text-[10px] uppercase tracking-widest text-candida-muted">
-            Cognitive Adaptive Neural Digital Intelligence
+            {agentActivity ? agentActivity : "Cognitive Adaptive Neural Digital Intelligence"}
           </p>
         </div>
       </div>
@@ -56,7 +55,15 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-2 rounded-md border border-candida-border bg-candida-bg/60 px-3 py-1.5">
-          <span className={`h-1.5 w-1.5 rounded-full ${statusColor === "text-emerald-400" ? "bg-emerald-400" : statusColor === "text-amber-400" ? "bg-amber-400" : "bg-red-400"} animate-pulse`} />
+          <span
+            className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+              statusColor === "text-emerald-400"
+                ? "bg-emerald-400"
+                : statusColor === "text-amber-400"
+                ? "bg-amber-400"
+                : "bg-red-400"
+            }`}
+          />
           <span className={`text-xs font-medium uppercase tracking-wider ${statusColor}`}>
             {systemStatus}
           </span>
