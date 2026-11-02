@@ -11,12 +11,13 @@ type LivingLogoProps = {
 };
 
 const sizes = {
-  sm: 56,
-  md: 96,
-  lg: 160,
-  xl: 260,
+  sm: 64,
+  md: 110,
+  lg: 180,
+  xl: 280,
 };
 
+/** C.A.N.D.I.D.A. mark — magenta particle orbitals + laser (ROSE reference photo) */
 export default function LivingLogo({
   size = "md",
   label = "CANDIDA",
@@ -24,302 +25,210 @@ export default function LivingLogo({
   className,
 }: LivingLogoProps) {
   const px = sizes[size];
-  const display =
-    label.length > 12
-      ? label
-          .split(".")
-          .filter(Boolean)
-          .map((s) => s[0])
-          .join("")
-      : label.replace(/\./g, "");
+  const showLabel = size === "xl" || size === "lg";
 
   return (
     <div
-      className={cn("relative flex items-center justify-center", className)}
-      style={{
-        width: px * 1.55,
-        height: px * 1.35,
-        perspective: px * 4,
-      }}
+      className={cn("relative flex flex-col items-center justify-center", className)}
+      style={{ width: px * 1.6, height: px * 1.35 }}
     >
-      {/* Ambient bloom */}
-      {active && (
-        <div
-          className="pointer-events-none absolute rounded-full"
-          style={{
-            width: px * 1.4,
-            height: px * 1.4,
-            background:
-              "radial-gradient(circle, rgba(255,45,106,0.28) 0%, rgba(255,45,106,0.08) 40%, transparent 70%)",
-            filter: "blur(8px)",
-          }}
-        />
-      )}
-
       <div
         className="relative"
         style={{
           width: px,
           height: px,
-          transformStyle: "preserve-3d",
-          transform: "rotateX(18deg) rotateZ(-2deg)",
+          perspective: px * 5,
         }}
       >
-        {/* Layer 0 — distant faint ellipse */}
-        <motion.div
-          className="absolute rounded-full border border-white/10"
-          style={{
-            inset: -px * 0.12,
-            transform: `translateZ(${-px * 0.4}px) scaleX(1.25) scaleY(0.92)`,
-          }}
-          animate={active ? { rotateZ: 360 } : {}}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-        />
-
-        {/* Layer 1 — outer dashed orbital */}
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{
-            transform: `translateZ(${-px * 0.22}px) scaleX(1.12)`,
-            border: "1.5px dashed rgba(255,45,106,0.35)",
-            boxShadow: active
-              ? "0 0 40px rgba(255,45,106,0.25)"
-              : undefined,
-          }}
-          animate={active ? { rotateZ: -360 } : {}}
-          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-        >
-          {Array.from({ length: 36 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute left-1/2 top-0 -translate-x-1/2"
-              style={{
-                width: i % 3 === 0 ? 2 : 1,
-                height: i % 3 === 0 ? 6 : 3,
-                background:
-                  i % 3 === 0
-                    ? "rgba(255,45,106,0.9)"
-                    : "rgba(255,255,255,0.25)",
-                transformOrigin: `center ${px / 2}px`,
-                transform: `rotate(${i * 10}deg)`,
-                borderRadius: 1,
-              }}
-            />
-          ))}
-        </motion.div>
-
-        {/* Layer 2 — solid magenta ring */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            inset: px * 0.04,
-            transform: `translateZ(${-px * 0.08}px)`,
-            border: "2px solid rgba(255,45,106,0.75)",
-            boxShadow: active
-              ? "0 0 28px rgba(255,45,106,0.55), inset 0 0 20px rgba(255,45,106,0.12)"
-              : "inset 0 0 10px rgba(255,45,106,0.08)",
-          }}
-          animate={active ? { rotateZ: 360 } : {}}
-          transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
-        >
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute left-1/2 top-0 h-2.5 w-0.5 -translate-x-1/2 rounded-sm bg-candida-magenta"
-              style={{
-                transformOrigin: `center ${(px * 0.92) / 2}px`,
-                transform: `rotate(${i * 30}deg)`,
-                boxShadow: "0 0 6px rgba(255,45,106,0.9)",
-              }}
-            />
-          ))}
-        </motion.div>
-
-        {/* Layer 3 — cyan counter-ring */}
-        <motion.div
-          className="absolute rounded-full border border-cyan-400/35"
-          style={{
-            inset: px * 0.14,
-            transform: `translateZ(${px * 0.02}px) scaleX(1.04)`,
-            boxShadow: active ? "0 0 16px rgba(0,242,255,0.2)" : undefined,
-          }}
-          animate={active ? { rotateZ: -360 } : {}}
-          transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
-        />
-
-        {/* Corner brackets — ROSE HUD chrome */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ transform: `translateZ(${px * 0.06}px)` }}
-        >
-          {(
-            [
-              { t: 0, l: 0, b: "border-t border-l", ox: -2, oy: -2 },
-              { t: 0, r: 0, b: "border-t border-r", ox: 2, oy: -2 },
-              { btm: 0, l: 0, b: "border-b border-l", ox: -2, oy: 2 },
-              { btm: 0, r: 0, b: "border-b border-r", ox: 2, oy: 2 },
-            ] as const
-          ).map((c, i) => (
-            <div
-              key={i}
-              className={`absolute h-4 w-4 border-candida-magenta/80 ${c.b}`}
-              style={{
-                top: "t" in c ? c.t : undefined,
-                left: "l" in c ? c.l : undefined,
-                right: "r" in c ? c.r : undefined,
-                bottom: "btm" in c ? c.btm : undefined,
-                transform: `translate(${c.ox}px, ${c.oy}px)`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Crosshair */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ transform: `translateZ(${px * 0.08}px)` }}
-        >
+        {/* Soft bloom */}
+        {active && (
           <div
-            className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{
+              width: px * 1.2,
+              height: px * 0.7,
               background:
-                "linear-gradient(90deg, transparent 8%, rgba(255,45,106,0.95) 30%, rgba(255,255,255,0.7) 50%, rgba(255,45,106,0.95) 70%, transparent 92%)",
+                "radial-gradient(ellipse, rgba(255,45,106,0.35) 0%, transparent 70%)",
+              filter: "blur(12px)",
             }}
           />
-          <div
-            className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2"
-            style={{
-              background:
-                "linear-gradient(180deg, transparent 8%, rgba(255,45,106,0.55) 35%, rgba(255,45,106,0.55) 65%, transparent 92%)",
-            }}
-          />
-          {/* center notch ticks */}
-          <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-candida-magenta/60" />
-        </div>
+        )}
 
-        {/* Fast scan arc */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            inset: px * 0.18,
-            transform: `translateZ(${px * 0.12}px)`,
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgba(255,45,106,0.85) 35deg, rgba(255,255,255,0.4) 55deg, transparent 90deg)",
-            mask: "radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1px))",
-            WebkitMask:
-              "radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1px))",
-          }}
-          animate={active ? { rotateZ: 360 } : {}}
-          transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
-        />
-
-        {/* Pulsing core glow */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            inset: px * 0.24,
-            transform: `translateZ(${px * 0.18}px)`,
-            background:
-              "radial-gradient(circle, rgba(255,77,141,0.5) 0%, rgba(255,45,106,0.18) 45%, transparent 72%)",
-          }}
-          animate={
-            active
-              ? {
-                  opacity: [0.7, 1, 0.7],
-                  scale: [0.96, 1.04, 0.96],
-                }
-              : {}
-          }
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Core disc */}
         <div
-          className="absolute flex items-center justify-center rounded-full"
+          className="absolute inset-0"
           style={{
-            inset: px * 0.28,
-            transform: `translateZ(${px * 0.26}px)`,
-            background:
-              "radial-gradient(circle at 40% 35%, #1a0a12 0%, #0a0508 55%, #050305 100%)",
-            border: "1.5px solid rgba(255,45,106,0.85)",
-            boxShadow: active
-              ? "0 0 36px rgba(255,45,106,0.7), 0 0 60px rgba(255,45,106,0.3), inset 0 0 24px rgba(255,45,106,0.25)"
-              : "inset 0 0 12px rgba(255,45,106,0.15)",
+            transformStyle: "preserve-3d",
+            transform: "rotateX(58deg)",
           }}
         >
-          {/* Inner ring on core */}
-          <div
-            className="absolute rounded-full border border-candida-magenta/30"
-            style={{ inset: "12%" }}
+          {/* Outer particle ellipse — slow */}
+          <OrbitalRing
+            px={px}
+            scale={1.15}
+            z={-px * 0.15}
+            duration={28}
+            reverse
+            color="rgba(255,255,255,0.55)"
+            particleCount={48}
+            active={active}
           />
 
-          <span
+          {/* Mid magenta ellipse */}
+          <OrbitalRing
+            px={px}
+            scale={0.92}
+            z={0}
+            duration={18}
+            color="rgba(255,45,106,0.95)"
+            particleCount={40}
+            active={active}
+            glow
+          />
+
+          {/* Inner tight ring */}
+          <OrbitalRing
+            px={px}
+            scale={0.62}
+            z={px * 0.12}
+            duration={12}
+            reverse
+            color="rgba(255,120,160,0.7)"
+            particleCount={28}
+            active={active}
+          />
+
+          {/* Second plane — tilted opposite for depth like the photo */}
+          <div
+            className="absolute inset-0"
             style={{
-              fontFamily: "'Russo One', 'Orbitron', Impact, sans-serif",
-              fontSize: Math.max(12, px * 0.125),
-              letterSpacing: size === "xl" ? "0.12em" : "0.08em",
-              color: "#fff",
-              textShadow: active
-                ? "0 0 10px rgba(255,255,255,0.9), 0 0 22px rgba(255,77,141,1), 0 0 40px rgba(255,45,106,0.8)"
-                : "0 0 8px rgba(255,45,106,0.5)",
-              textTransform: "uppercase",
-              fontWeight: 400,
-              transform: "skewX(-6deg)",
-              lineHeight: 1,
+              transform: `rotateZ(55deg) translateZ(${px * 0.05}px)`,
+              transformStyle: "preserve-3d",
             }}
           >
-            {display}
-          </span>
+            <OrbitalRing
+              px={px}
+              scale={0.78}
+              z={0}
+              duration={20}
+              color="rgba(200,220,255,0.45)"
+              particleCount={32}
+              active={active}
+            />
+          </div>
         </div>
 
-        {/* Orbiting energy nodes */}
-        {active &&
-          Array.from({ length: 10 }).map((_, i) => {
-            const angle = (i / 10) * Math.PI * 2;
-            const r = px * 0.5;
-            return (
-              <motion.div
-                key={i}
-                className="absolute rounded-full"
-                style={{
-                  left: "50%",
-                  top: "50%",
-                  width: i % 2 === 0 ? 4 : 3,
-                  height: i % 2 === 0 ? 4 : 3,
-                  marginLeft: -2,
-                  marginTop: -2,
-                  background:
-                    i % 3 === 0
-                      ? "rgba(0,242,255,0.95)"
-                      : "rgba(255,45,106,1)",
-                  boxShadow:
-                    i % 3 === 0
-                      ? "0 0 10px rgba(0,242,255,1)"
-                      : "0 0 10px rgba(255,45,106,1)",
-                  transform: `translateZ(${px * 0.1}px)`,
-                }}
-                animate={{
-                  x: [
-                    Math.cos(angle) * r,
-                    Math.cos(angle + 1.1) * (r * 1.06),
-                    Math.cos(angle) * r,
-                  ],
-                  y: [
-                    Math.sin(angle) * r * 0.78,
-                    Math.sin(angle + 1.1) * (r * 0.82),
-                    Math.sin(angle) * r * 0.78,
-                  ],
-                  opacity: [0.3, 1, 0.3],
-                }}
-                transition={{
-                  duration: 3.2 + i * 0.2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            );
-          })}
+        {/* Horizontal laser through center — signature ROSE line */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: px * 1.35, height: 2 }}
+        >
+          <div
+            className="h-full w-full"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(255,45,106,0.15) 15%, rgba(255,80,140,1) 45%, rgba(255,255,255,0.95) 50%, rgba(255,80,140,1) 55%, rgba(255,45,106,0.15) 85%, transparent 100%)",
+              boxShadow: active
+                ? "0 0 12px rgba(255,45,106,0.9), 0 0 28px rgba(255,45,106,0.5)"
+                : undefined,
+            }}
+          />
+          {/* Core node on laser */}
+          <motion.div
+            className="absolute left-1/2 top-1/2 rounded-full"
+            style={{
+              width: 6,
+              height: 6,
+              marginLeft: -3,
+              marginTop: -3,
+              background: "#fff",
+              boxShadow: "0 0 10px #fff, 0 0 20px rgba(255,45,106,1)",
+            }}
+            animate={active ? { scale: [1, 1.4, 1], opacity: [0.8, 1, 0.8] } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
       </div>
+
+      {/* Name sits under the orbital — not inside a disc */}
+      {showLabel && (
+        <motion.p
+          className="mt-6 text-center"
+          style={{
+            fontFamily: "'Russo One', 'Orbitron', sans-serif",
+            fontSize: Math.max(11, px * 0.07),
+            letterSpacing: "0.28em",
+            color: "rgba(255,255,255,0.85)",
+            textShadow: active
+              ? "0 0 16px rgba(255,45,106,0.8)"
+              : undefined,
+          }}
+          animate={active ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.85 }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          {label.replace(/\./g, "")}
+        </motion.p>
+      )}
     </div>
+  );
+}
+
+function OrbitalRing({
+  px,
+  scale,
+  z,
+  duration,
+  reverse,
+  color,
+  particleCount,
+  active,
+  glow,
+}: {
+  px: number;
+  scale: number;
+  z: number;
+  duration: number;
+  reverse?: boolean;
+  color: string;
+  particleCount: number;
+  active: boolean;
+  glow?: boolean;
+}) {
+  const r = (px / 2) * scale;
+
+  return (
+    <motion.div
+      className="absolute left-1/2 top-1/2"
+      style={{
+        width: 0,
+        height: 0,
+        transform: `translateZ(${z}px)`,
+      }}
+      animate={active ? { rotateZ: reverse ? -360 : 360 } : {}}
+      transition={{ duration, repeat: Infinity, ease: "linear" }}
+    >
+      {Array.from({ length: particleCount }).map((_, i) => {
+        const a = (i / particleCount) * Math.PI * 2;
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r * 0.42; // ellipse foreshortening
+        const bright = i % 4 === 0;
+        return (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              left: x,
+              top: y,
+              width: bright ? 2.5 : 1.5,
+              height: bright ? 2.5 : 1.5,
+              marginLeft: bright ? -1.25 : -0.75,
+              marginTop: bright ? -1.25 : -0.75,
+              background: color,
+              opacity: bright ? 1 : 0.55,
+              boxShadow: glow || bright ? `0 0 6px ${color}` : undefined,
+            }}
+          />
+        );
+      })}
+    </motion.div>
   );
 }
