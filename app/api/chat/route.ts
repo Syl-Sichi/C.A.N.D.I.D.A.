@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runChat, type LLMMessage } from "@/lib/agent";
+import { runChat, listProviders, getActiveProvider, type LLMMessage } from "@/lib/agent";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Only pass user/assistant turns to the model; system is injected by runChat
     const sanitized = messages
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => ({
@@ -42,10 +41,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const active = getActiveProvider();
   return NextResponse.json({
     status: "ok",
     service: "C.A.N.D.I.D.A. Chat API",
-    phase: "2-scaffold",
-    message: "POST messages[] to converse. Provider: mock until configured.",
+    activeProvider: { id: active.id, name: active.name },
+    providers: listProviders(),
+    wired: active.id !== "mock",
   });
 }

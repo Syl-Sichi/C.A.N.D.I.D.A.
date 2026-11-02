@@ -1,7 +1,12 @@
 import type { LLMProvider, LLMMessage, LLMChatResponse } from "./types";
 import { mockProvider } from "./providers/mock";
+import { createCandidaLLMProvider } from "./providers/openaiCompatible";
 
-const providers: LLMProvider[] = [mockProvider];
+/**
+ * C.A.N.D.I.D.A. only. Prefer her wired LLM; fall back to witty mock.
+ */
+const live = createCandidaLLMProvider();
+const providers: LLMProvider[] = live ? [live, mockProvider] : [mockProvider];
 
 export function registerProvider(provider: LLMProvider) {
   const idx = providers.findIndex((p) => p.id === provider.id);
@@ -41,12 +46,25 @@ export async function runChat(
     content: SYSTEM,
   };
 
-  const response = await provider.chat({
-    messages: [system, ...messages],
-    temperature: 0.85,
-  });
-
-  return { ...response, providerId: provider.id };
+  try {
+    const response = await provider.chat({
+      messages: [system, ...messages],
+      temperature: 0.85,
+      maxTokens: 600,
+    });
+    return { ...response, providerId: provider.id };
+  } catch (err) {
+    console.error("[runChat] primary failed, trying mock", err);
+    // If live model fails, fall back so she still talks
+    if (provider.id !== "mock") {
+      const response = await mockProvider.chat({
+        messages: [system, ...messages],
+        temperature: 0.85,
+      });
+      return { ...response, providerId: "mock-fallback" };
+    }
+    throw err;
+  }
 }
 
 export * from "./types";
