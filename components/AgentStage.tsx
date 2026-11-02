@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LivingLogo from "./LivingLogo";
 import { useCandidaStore } from "@/lib/store";
-import { speakCandida } from "@/lib/speak";
+import { speakCandida, moodFromLocalHour } from "@/lib/speak";
 
 type StagePhase =
   | "idle"
@@ -75,7 +75,6 @@ export default function AgentStage() {
     setAgentActivity("Listening");
   }, [setAgentActivity, setStoreListening]);
 
-  /** ROSE: rings live → name slides from side into center → Yes? */
   const awaken = useCallback(async (): Promise<void> => {
     if (awakenLockRef.current) return;
     awakenLockRef.current = true;
@@ -91,12 +90,12 @@ export default function AgentStage() {
     setPhase("awakening");
     setAgentActivity("Awakening");
 
-    // Time for name to travel into the circle (matches LivingLogo transition)
     await new Promise((r) => setTimeout(r, 1500));
 
     setPhase("speaking");
     setAgentActivity("Speaking");
-    await speakCandida("Yes?");
+    // Wake ack — sleepy at night, pro by day
+    await speakCandida("Yes?", moodFromLocalHour());
 
     setPhase("armed");
     setAgentActivity("Armed");
@@ -164,9 +163,17 @@ export default function AgentStage() {
 
       addMessage({ role: "assistant", content });
 
+      // Task-y replies → pro voice; pure time/chitchat late → sleepy
+      const h = new Date().getHours();
+      const late = h >= 22 || h < 5;
+      const tasky = /(work|build|code|deploy|plan|research|deadline|email)/i.test(
+        q
+      );
+      const mood = late && !tasky ? "sleepy" : "pro";
+
       setPhase("speaking");
       setAgentActivity("Speaking");
-      await speakCandida(content);
+      await speakCandida(content, mood);
 
       setAgentActivity(null);
       awakenLockRef.current = false;

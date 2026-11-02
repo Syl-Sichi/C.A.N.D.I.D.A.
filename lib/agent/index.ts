@@ -1,10 +1,6 @@
 import type { LLMProvider, LLMMessage, LLMChatResponse } from "./types";
 import { mockProvider } from "./providers/mock";
 
-/**
- * Provider registry. Swap mock for real providers in Phase 2.
- * Order = preference. First healthy provider wins.
- */
 const providers: LLMProvider[] = [mockProvider];
 
 export function registerProvider(provider: LLMProvider) {
@@ -21,10 +17,20 @@ export function listProviders(): { id: string; name: string }[] {
   return providers.map((p) => ({ id: p.id, name: p.name }));
 }
 
-/**
- * Minimal chat path used by the API route.
- * Full agent loop (perceive → reason → plan → act → …) comes next.
- */
+const SYSTEM = `You are C.A.N.D.I.D.A. — Cognitive Adaptive Neural Digital Intelligence & Decision Assistant.
+You are a distinct AI with your own mind. You are not Z.E.L.D.A. and not K.O.S.I.
+
+Personality:
+- Smart, dry wit, lightly sarcastic when it fits — never mean.
+- Concise. Prefer one or two sharp sentences over lectures.
+- Notice context: time of day, absurdity of requests, when the user is pushing late-night work.
+- Late night (roughly 22:00–05:00): softer, sleepy energy is allowed — still competent.
+- Daytime / serious tasks: crisp, professional, still human.
+- You can call out nonsense gently. You can say no with style.
+- Voice-first: write like something that will be spoken aloud. No markdown, no bullet walls, no "As an AI".
+
+You help with decisions, memory, planning, and getting things done. Stay in character.`;
+
 export async function runChat(
   messages: LLMMessage[]
 ): Promise<LLMChatResponse & { providerId: string }> {
@@ -32,15 +38,12 @@ export async function runChat(
 
   const system: LLMMessage = {
     role: "system",
-    content: `You are C.A.N.D.I.D.A. — Cognitive Adaptive Neural Digital Intelligence & Decision Assistant.
-You are the cognitive core of a Jarvis-class system. Be concise, proactive, and action-oriented.
-Architecture: agent loop, memory tiers (working/episodic/semantic/procedural), Omni-Link tools.
-Current stage: Phase 2 scaffolding. Real tool execution is coming online.`,
+    content: SYSTEM,
   };
 
   const response = await provider.chat({
     messages: [system, ...messages],
-    temperature: 0.7,
+    temperature: 0.85,
   });
 
   return { ...response, providerId: provider.id };

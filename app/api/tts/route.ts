@@ -4,12 +4,7 @@ export const runtime = "nodejs";
 
 /**
  * C.A.N.D.I.D.A. only — ElevenLabs TTS
- * Soft / sleepy delivery (not shared with Z.E.L.D.A. or K.O.S.I.)
- *
- * Env:
- *   ELEVENLABS_API_KEY
- *   ELEVENLABS_VOICE_ID  (optional)
- *   ELEVENLABS_MODEL_ID  (optional)
+ * body: { text, mood?: "sleepy" | "pro" }
  */
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -24,9 +19,11 @@ export async function POST(req: NextRequest) {
   }
 
   let text = "";
+  let mood: "sleepy" | "pro" = "pro";
   try {
     const body = await req.json();
     text = String(body.text ?? "").trim();
+    if (body.mood === "sleepy" || body.mood === "pro") mood = body.mood;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -36,11 +33,26 @@ export async function POST(req: NextRequest) {
   }
 
   const clipped = text.slice(0, 2500);
-
   const voiceId =
     process.env.ELEVENLABS_VOICE_ID?.trim() || "21m00Tcm4TlvDq8ikWAM";
   const modelId =
     process.env.ELEVENLABS_MODEL_ID?.trim() || "eleven_turbo_v2_5";
+
+  // Sleepy = soft / low energy. Pro = clearer, more present.
+  const voice_settings =
+    mood === "sleepy"
+      ? {
+          stability: 0.82,
+          similarity_boost: 0.6,
+          style: 0.08,
+          use_speaker_boost: false,
+        }
+      : {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.35,
+          use_speaker_boost: true,
+        };
 
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
@@ -55,13 +67,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         text: clipped,
         model_id: modelId,
-        // Sleepy / soft: high stability, low style, no hard boost
-        voice_settings: {
-          stability: 0.78,
-          similarity_boost: 0.65,
-          style: 0.12,
-          use_speaker_boost: false,
-        },
+        voice_settings,
       }),
     });
 

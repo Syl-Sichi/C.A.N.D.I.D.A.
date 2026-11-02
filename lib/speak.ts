@@ -1,8 +1,13 @@
+export type SpeakMood = "sleepy" | "pro";
+
 /**
- * Play C.A.N.D.I.D.A. speech via ElevenLabs (/api/tts).
- * Returns false if TTS is unavailable so callers can fall back silently.
+ * C.A.N.D.I.D.A. speech via ElevenLabs.
+ * mood: sleepy (soft, late) | pro (crisper daytime / task mode)
  */
-export async function speakCandida(text: string): Promise<boolean> {
+export async function speakCandida(
+  text: string,
+  mood: SpeakMood = "pro"
+): Promise<boolean> {
   const clean = text.trim();
   if (!clean || typeof window === "undefined") return false;
 
@@ -10,13 +15,10 @@ export async function speakCandida(text: string): Promise<boolean> {
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: clean }),
+      body: JSON.stringify({ text: clean, mood }),
     });
 
-    if (!res.ok) {
-      // 503 = key missing — fail quietly in UI
-      return false;
-    }
+    if (!res.ok) return false;
 
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -38,4 +40,10 @@ export async function speakCandida(text: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Prefer sleepy voice late night (local browser time). */
+export function moodFromLocalHour(): SpeakMood {
+  const h = new Date().getHours();
+  return h >= 22 || h < 5 ? "sleepy" : "pro";
 }
