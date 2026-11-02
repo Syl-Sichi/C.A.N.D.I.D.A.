@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 /**
- * C.A.N.D.I.D.A. speech — ElevenLabs TTS
+ * C.A.N.D.I.D.A. only — ElevenLabs TTS
+ * Soft / sleepy delivery (not shared with Z.E.L.D.A. or K.O.S.I.)
+ *
  * Env:
- *   ELEVENLABS_API_KEY   — required
- *   ELEVENLABS_VOICE_ID  — optional (default: Rachel, warm female)
- *   ELEVENLABS_MODEL_ID  — optional (default: eleven_turbo_v2_5)
+ *   ELEVENLABS_API_KEY
+ *   ELEVENLABS_VOICE_ID  (optional)
+ *   ELEVENLABS_MODEL_ID  (optional)
  */
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -33,11 +35,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "text required" }, { status: 400 });
   }
 
-  // Keep utterances reasonable for latency + cost
   const clipped = text.slice(0, 2500);
 
   const voiceId =
-    process.env.ELEVENLABS_VOICE_ID?.trim() || "21m00Tcm4TlvDq8ikWAM"; // Rachel
+    process.env.ELEVENLABS_VOICE_ID?.trim() || "21m00Tcm4TlvDq8ikWAM";
   const modelId =
     process.env.ELEVENLABS_MODEL_ID?.trim() || "eleven_turbo_v2_5";
 
@@ -54,11 +55,12 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         text: clipped,
         model_id: modelId,
+        // Sleepy / soft: high stability, low style, no hard boost
         voice_settings: {
-          stability: 0.45,
-          similarity_boost: 0.8,
-          style: 0.35,
-          use_speaker_boost: true,
+          stability: 0.78,
+          similarity_boost: 0.65,
+          style: 0.12,
+          use_speaker_boost: false,
         },
       }),
     });
