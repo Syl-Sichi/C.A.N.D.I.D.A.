@@ -45,7 +45,6 @@ export default function AgentStage() {
   } = useCandidaStore();
 
   const [phase, setPhase] = useState<StagePhase>("idle");
-  const [statusLine, setStatusLine] = useState("");
   const [interim, setInterim] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
@@ -55,6 +54,13 @@ export default function AgentStage() {
   const shouldListenRef = useRef(true);
   const awakenLockRef = useRef(false);
   phaseRef.current = phase;
+
+  const logoMode =
+    phase === "awakening"
+      ? "awakening"
+      : phase === "armed" || phase === "speaking" || phase === "thinking"
+      ? "present"
+      : "listening";
 
   const resumeListen = useCallback(() => {
     shouldListenRef.current = true;
@@ -66,11 +72,10 @@ export default function AgentStage() {
     }
     setPhase("listening");
     setStoreListening(true);
-    setStatusLine("");
     setAgentActivity("Listening");
   }, [setAgentActivity, setStoreListening]);
 
-  /** ROSE-style awaken: logo expands, presence holds, then spoken Yes? */
+  /** ROSE: rings live → name slides from side into center → Yes? */
   const awaken = useCallback(async (): Promise<void> => {
     if (awakenLockRef.current) return;
     awakenLockRef.current = true;
@@ -84,11 +89,10 @@ export default function AgentStage() {
     setStoreListening(false);
 
     setPhase("awakening");
-    setStatusLine("");
     setAgentActivity("Awakening");
 
-    // Hold on the living logo — like ROSE opening
-    await new Promise((r) => setTimeout(r, 1400));
+    // Time for name to travel into the circle (matches LivingLogo transition)
+    await new Promise((r) => setTimeout(r, 1500));
 
     setPhase("speaking");
     setAgentActivity("Speaking");
@@ -113,7 +117,6 @@ export default function AgentStage() {
     }, 12000);
   }, [resumeListen, setAgentActivity, setStoreListening]);
 
-  /** Voice-only reply — no text on screen */
   const runDirective = useCallback(
     async (raw: string) => {
       const q = stripWake(raw) || raw.trim();
@@ -131,7 +134,6 @@ export default function AgentStage() {
       setStoreListening(false);
 
       setPhase("thinking");
-      setStatusLine("");
       setAgentActivity("Reasoning");
 
       addMessage({ role: "user", content: q });
@@ -155,17 +157,12 @@ export default function AgentStage() {
 
         const data = await res.json();
         content =
-          data.content ??
-          "I heard you, but I could not form a reply.";
+          data.content ?? "I heard you, but I could not form a reply.";
       } catch {
         content = "I am having trouble reaching my core. Try again in a moment.";
       }
 
       addMessage({ role: "assistant", content });
-
-      // Brief presence beat, then speak only
-      setPhase("awakening");
-      await new Promise((r) => setTimeout(r, 600));
 
       setPhase("speaking");
       setAgentActivity("Speaking");
@@ -224,7 +221,6 @@ export default function AgentStage() {
           if (hasWake(text)) {
             const rest = stripWake(text);
             if (rest.length > 2) {
-              // Wake + command in one go: awaken briefly then answer
               (async () => {
                 await awaken();
                 if (armedTimeoutRef.current) clearTimeout(armedTimeoutRef.current);
@@ -316,9 +312,9 @@ export default function AgentStage() {
 
   const intensity =
     phase === "awakening" || phase === "speaking"
-      ? 1.12
+      ? 1.1
       : phase === "armed" || phase === "thinking"
-      ? 1.06
+      ? 1.05
       : 1;
 
   const glowStrong =
@@ -326,12 +322,8 @@ export default function AgentStage() {
 
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#030305]">
-      {/* ROSE-style void — strengthens on awaken */}
       <motion.div
         className="pointer-events-none absolute inset-0"
-        animate={{
-          opacity: 1,
-        }}
         style={{
           background: glowStrong
             ? "radial-gradient(ellipse 50% 42% at 50% 44%, rgba(255,45,106,0.22) 0%, transparent 65%)"
@@ -340,7 +332,6 @@ export default function AgentStage() {
         transition={{ duration: 1.2 }}
       />
 
-      {/* Scanline sweep on awaken */}
       <AnimatePresence>
         {phase === "awakening" && (
           <motion.div
@@ -353,62 +344,27 @@ export default function AgentStage() {
         )}
       </AnimatePresence>
 
-      {/* Living logo — center stage, grows on awaken like ROSE */}
       <motion.div
         className="relative z-10"
         animate={{
           scale: intensity,
           filter:
             phase === "awakening"
-              ? "brightness(1.25)"
+              ? "brightness(1.3)"
               : phase === "speaking"
               ? "brightness(1.15)"
               : "brightness(1)",
         }}
         transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
       >
-        <LivingLogo size="xl" label="CANDIDA" active />
+        <LivingLogo size="xl" label="CANDIDA" active mode={logoMode} />
       </motion.div>
 
-      {/* Minimal status — no reply text */}
-      <div className="mt-12 min-h-[3rem] px-4 text-center">
-        <AnimatePresence mode="wait">
-          {(phase === "awakening" ||
-            phase === "speaking" ||
-            phase === "thinking" ||
-            phase === "armed") && (
-            <motion.p
-              key={phase}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.9 }}
-              exit={{ opacity: 0 }}
-              className="text-[10px] font-semibold uppercase tracking-[0.35em] text-candida-magenta/90"
-              style={{ fontFamily: "'Orbitron', sans-serif" }}
-            >
-              {phase === "awakening"
-                ? "Awakening"
-                : phase === "speaking"
-                ? "Speaking"
-                : phase === "thinking"
-                ? "…"
-                : phase === "armed"
-                ? "Listening"
-                : ""}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {/* Live transcript only while user is speaking — not her replies */}
-        {interim && (phase === "listening" || phase === "armed") && (
-          <p className="mt-2 text-xs text-zinc-600">…</p>
-        )}
-
+      <div className="mt-10 min-h-[2rem] px-4 text-center">
         {voiceError && (
-          <p className="mt-3 text-xs text-amber-400/90">{voiceError}</p>
+          <p className="text-xs text-amber-400/90">{voiceError}</p>
         )}
       </div>
-
-      {/* No text input — pure voice presence like ROSE */}
     </div>
   );
 }

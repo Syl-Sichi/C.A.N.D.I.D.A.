@@ -7,6 +7,8 @@ type LivingLogoProps = {
   size?: "sm" | "md" | "lg" | "xl";
   label?: string;
   active?: boolean;
+  /** listening = rings only / name off-side; awakened = name settles in center like ROSE */
+  mode?: "idle" | "listening" | "awakening" | "present";
   className?: string;
 };
 
@@ -17,20 +19,23 @@ const sizes = {
   xl: 280,
 };
 
-/** C.A.N.D.I.D.A. mark — magenta particle orbitals + laser (ROSE reference photo) */
+/** C.A.N.D.I.D.A. mark — particle orbitals + laser; name enters center on awaken */
 export default function LivingLogo({
   size = "md",
   label = "CANDIDA",
   active = true,
+  mode = "listening",
   className,
 }: LivingLogoProps) {
   const px = sizes[size];
-  const showLabel = size === "xl" || size === "lg";
+  const name = label.replace(/\./g, "");
+  const centered = mode === "awakening" || mode === "present";
+  const forming = mode === "awakening";
 
   return (
     <div
-      className={cn("relative flex flex-col items-center justify-center", className)}
-      style={{ width: px * 1.6, height: px * 1.35 }}
+      className={cn("relative flex items-center justify-center", className)}
+      style={{ width: px * 1.7, height: px * 1.25 }}
     >
       <div
         className="relative"
@@ -40,7 +45,6 @@ export default function LivingLogo({
           perspective: px * 5,
         }}
       >
-        {/* Soft bloom */}
         {active && (
           <div
             className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -61,7 +65,6 @@ export default function LivingLogo({
             transform: "rotateX(58deg)",
           }}
         >
-          {/* Outer particle ellipse — slow */}
           <OrbitalRing
             px={px}
             scale={1.15}
@@ -72,8 +75,6 @@ export default function LivingLogo({
             particleCount={48}
             active={active}
           />
-
-          {/* Mid magenta ellipse */}
           <OrbitalRing
             px={px}
             scale={0.92}
@@ -84,8 +85,6 @@ export default function LivingLogo({
             active={active}
             glow
           />
-
-          {/* Inner tight ring */}
           <OrbitalRing
             px={px}
             scale={0.62}
@@ -96,8 +95,6 @@ export default function LivingLogo({
             particleCount={28}
             active={active}
           />
-
-          {/* Second plane — tilted opposite for depth like the photo */}
           <div
             className="absolute inset-0"
             style={{
@@ -117,7 +114,7 @@ export default function LivingLogo({
           </div>
         </div>
 
-        {/* Horizontal laser through center — signature ROSE line */}
+        {/* Laser */}
         <div
           className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
           style={{ width: px * 1.35, height: 2 }}
@@ -132,7 +129,6 @@ export default function LivingLogo({
                 : undefined,
             }}
           />
-          {/* Core node on laser */}
           <motion.div
             className="absolute left-1/2 top-1/2 rounded-full"
             style={{
@@ -147,27 +143,43 @@ export default function LivingLogo({
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
         </div>
-      </div>
 
-      {/* Name sits under the orbital — not inside a disc */}
-      {showLabel && (
-        <motion.p
-          className="mt-6 text-center"
-          style={{
-            fontFamily: "'Russo One', 'Orbitron', sans-serif",
-            fontSize: Math.max(11, px * 0.07),
-            letterSpacing: "0.28em",
-            color: "rgba(255,255,255,0.85)",
-            textShadow: active
-              ? "0 0 16px rgba(255,45,106,0.8)"
-              : undefined,
+        {/*
+          Name motion (ROSE): starts off to the side, slides into the center of the rings.
+          Listening = faint / offset. Awakening = travels in. Present = locked center.
+        */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
+          initial={false}
+          animate={{
+            x: centered ? 0 : -px * 0.42,
+            y: centered ? 0 : px * 0.06,
+            opacity: centered ? 1 : mode === "idle" ? 0 : 0.25,
+            scale: centered ? 1 : 0.85,
           }}
-          animate={active ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.85 }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          transition={{
+            duration: forming ? 1.35 : 0.6,
+            ease: [0.22, 1, 0.36, 1],
+          }}
         >
-          {label.replace(/\./g, "")}
-        </motion.p>
-      )}
+          <span
+            style={{
+              fontFamily: "'Russo One', 'Orbitron', Impact, sans-serif",
+              fontSize: Math.max(14, px * 0.13),
+              letterSpacing: "0.14em",
+              color: "#fff",
+              textTransform: "uppercase",
+              textShadow: centered
+                ? "0 0 12px rgba(255,255,255,0.95), 0 0 28px rgba(255,45,106,1), 0 0 48px rgba(255,45,106,0.7)"
+                : "0 0 8px rgba(255,45,106,0.4)",
+              transform: "skewX(-5deg)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {name}
+          </span>
+        </motion.div>
+      </div>
     </div>
   );
 }
@@ -209,7 +221,7 @@ function OrbitalRing({
       {Array.from({ length: particleCount }).map((_, i) => {
         const a = (i / particleCount) * Math.PI * 2;
         const x = Math.cos(a) * r;
-        const y = Math.sin(a) * r * 0.42; // ellipse foreshortening
+        const y = Math.sin(a) * r * 0.42;
         const bright = i % 4 === 0;
         return (
           <div
