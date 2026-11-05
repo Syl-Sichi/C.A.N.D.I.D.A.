@@ -47,7 +47,7 @@ export default function RoseInterface({ phase, interim, voiceError }: { phase: P
         </motion.div>}
       </AnimatePresence>
 
-      <motion.div className="absolute z-20" animate={workspace ? { x: "min(35vw, 390px)", y: "min(28vh, 220px)", scale: 0.43 } : { x: 0, y: 0, scale: phase === "awakening" ? 1.12 : active ? 1.04 : 1 }} transition={{ duration: workspace ? 1.05 : 0.85, ease: [0.22, 1, 0.36, 1] }}>
+      <motion.div className="absolute z-20" animate={workspace ? { x: "32vw", y: "23vh", scale: 0.43 } : { x: 0, y: 0, scale: phase === "awakening" ? 1.12 : active ? 1.04 : 1 }} transition={{ duration: workspace ? 1.05 : 0.85, ease: [0.22, 1, 0.36, 1] }}>
         <LivingLogo size="xl" label="CANDIDA" active mode={mode} />
       </motion.div>
 
