@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import RoseInterface from "./RoseInterface";
 import { useCandidaStore } from "@/lib/store";
 import { speakCandida, moodFromLocalHour } from "@/lib/speak";
@@ -54,13 +53,6 @@ export default function AgentStage() {
   const shouldListenRef = useRef(true);
   const awakenLockRef = useRef(false);
   phaseRef.current = phase;
-
-  const logoMode =
-    phase === "awakening"
-      ? "awakening"
-      : phase === "armed" || phase === "speaking" || phase === "thinking"
-      ? "present"
-      : "listening";
 
   const resumeListen = useCallback(() => {
     shouldListenRef.current = true;
@@ -316,16 +308,6 @@ export default function AgentStage() {
     setAgentActivity,
     setStoreListening,
   ]);
-
-  const intensity =
-    phase === "awakening" || phase === "speaking"
-      ? 1.1
-      : phase === "armed" || phase === "thinking"
-      ? 1.05
-      : 1;
-
-  const glowStrong =
-    phase === "awakening" || phase === "speaking" || phase === "armed";
 
   return <RoseInterface phase={phase} interim={interim} voiceError={voiceError} />;
 }
