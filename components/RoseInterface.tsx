@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import type { ReactNode } from "react";
 import LivingLogo from "./LivingLogo";
 
 type Phase = "idle" | "listening" | "awakening" | "armed" | "thinking" | "speaking";
@@ -63,7 +64,7 @@ export default function RoseInterface({ phase, interim, voiceError }: { phase: P
   );
 }
 
-function HudPanel({ children, title, code, className }: { children: React.ReactNode; title: string; code: string; className?: string }) {
+function HudPanel({ children, title, code, className }: { children: ReactNode; title: string; code: string; className?: string }) {
   return <motion.section className={`relative min-h-0 overflow-hidden rounded-xl border border-rose-200/10 bg-[#0b0910]/75 p-4 shadow-[0_12px_50px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-5 ${className ?? ""}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.12 }}>
     <div className="flex items-center justify-between border-b border-white/[0.06] pb-3"><span className="text-[9px] font-medium tracking-[0.22em] text-white/60">{title}</span><span className="text-[8px] tracking-widest text-rose-200/35">{code}</span></div>
     {children}<div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-rose-300/20 to-transparent" />
