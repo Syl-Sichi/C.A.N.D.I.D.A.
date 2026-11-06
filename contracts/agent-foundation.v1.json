@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://syl-sichi.dev/contracts/agent-foundation.v1.json",
+  "title": "AI Trio Shared Agent Foundation",
+  "description": "Versioned wire contract for independent peer agents, tools, delegation and enrolled devices.",
+  "oneOf": [
+    { "$ref": "#/$defs/toolManifest" },
+    { "$ref": "#/$defs/toolInvocation" },
+    { "$ref": "#/$defs/toolResult" },
+    { "$ref": "#/$defs/delegationRequest" },
+    { "$ref": "#/$defs/delegationResult" },
+    { "$ref": "#/$defs/deviceHello" },
+    { "$ref": "#/$defs/deviceHeartbeat" },
+    { "$ref": "#/$defs/deviceCommand" },
+    { "$ref": "#/$defs/deviceAck" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "agentId": { "type": "string", "enum": ["zelda", "kosi", "candida"] },
+    "risk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+    "toolManifest": {
+      "type": "object", "required": ["protocolVersion", "agentId", "tools"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" },
+        "agentId": { "$ref": "#/$defs/agentId" },
+        "runtimeVersion": { "type": "string", "maxLength": 64 },
+        "tools": { "type": "array", "items": { "$ref": "#/$defs/toolDefinition" } }
+      }, "additionalProperties": false
+    },
+    "toolDefinition": {
+      "type": "object", "required": ["name", "description", "inputSchema", "risk", "scopes", "idempotent"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_-]*)+$", "maxLength": 128 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "inputSchema": { "type": "object" },
+        "risk": { "$ref": "#/$defs/risk" },
+        "scopes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "maxLength": 128 } },
+        "idempotent": { "type": "boolean" },
+        "requiresConfirmation": { "type": "boolean", "default": false },
+        "timeoutMs": { "type": "integer", "minimum": 100, "maximum": 300000 }
+      }, "additionalProperties": false
+    },
+    "toolInvocation": {
+      "type": "object", "required": ["protocolVersion", "kind", "requestId", "agentId", "tool", "arguments", "issuedAt", "expiresAt", "scopes"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "tool.invoke" },
+        "requestId": { "$ref": "#/$defs/id" }, "agentId": { "$ref": "#/$defs/agentId" },
+        "tool": { "type": "string", "maxLength": 128 }, "arguments": { "type": "object" },
+        "issuedAt": { "type": "string", "format": "date-time" }, "expiresAt": { "type": "string", "format": "date-time" },
+        "scopes": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "idempotencyKey": { "$ref": "#/$defs/id" }, "traceId": { "$ref": "#/$defs/id" }
+      }, "additionalProperties": false
+    },
+    "toolResult": {
+      "type": "object", "required": ["protocolVersion", "kind", "requestId", "ok", "completedAt"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "tool.result" },
+        "requestId": { "$ref": "#/$defs/id" }, "ok": { "type": "boolean" },
+        "data": {}, "error": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string", "maxLength": 1000 }, "retryable": { "type": "boolean" } }, "additionalProperties": false },
+        "completedAt": { "type": "string", "format": "date-time" }, "durationMs": { "type": "integer", "minimum": 0 }
+      }, "additionalProperties": false
+    },
+    "delegationRequest": {
+      "type": "object", "required": ["protocolVersion", "kind", "delegationId", "fromAgent", "toAgent", "objective", "scope", "issuedAt", "expiresAt", "depth"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "agent.delegate" },
+        "delegationId": { "$ref": "#/$defs/id" }, "parentDelegationId": { "$ref": "#/$defs/id" },
+        "fromAgent": { "$ref": "#/$defs/agentId" }, "toAgent": { "$ref": "#/$defs/agentId" },
+        "objective": { "type": "string", "minLength": 1, "maxLength": 12000 },
+        "context": { "type": "object" }, "scope": { "type": "object", "required": ["tools", "data"], "properties": {
+          "tools": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+          "data": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+          "scopes": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+        }, "additionalProperties": false },
+        "issuedAt": { "type": "string", "format": "date-time" }, "expiresAt": { "type": "string", "format": "date-time" },
+        "depth": { "type": "integer", "minimum": 0, "maximum": 3 }, "budget": { "type": "object", "properties": {
+          "maxToolCalls": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "maxDurationMs": { "type": "integer", "minimum": 1000, "maximum": 3600000 }
+        }, "additionalProperties": false }
+      }, "additionalProperties": false
+    },
+    "delegationResult": {
+      "type": "object", "required": ["protocolVersion", "kind", "delegationId", "agentId", "status", "completedAt"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "agent.delegate.result" },
+        "delegationId": { "$ref": "#/$defs/id" }, "agentId": { "$ref": "#/$defs/agentId" },
+        "status": { "type": "string", "enum": ["accepted", "running", "completed", "failed", "rejected", "expired"] },
+        "summary": { "type": "string", "maxLength": 12000 }, "artifacts": { "type": "array", "items": { "type": "object" } },
+        "completedAt": { "type": "string", "format": "date-time" }
+      }, "additionalProperties": false
+    },
+    "deviceHello": {
+      "type": "object", "required": ["protocolVersion", "kind", "deviceId", "deviceType", "publicKey", "nonce", "capabilities"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "device.hello" },
+        "deviceId": { "$ref": "#/$defs/id" }, "deviceType": { "type": "string", "enum": ["android", "macos", "linux", "windows", "iot"] },
+        "publicKey": { "type": "string", "minLength": 32, "maxLength": 4096 }, "nonce": { "type": "string", "minLength": 16, "maxLength": 256 },
+        "capabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "appVersion": { "type": "string", "maxLength": 64 }
+      }, "additionalProperties": false
+    },
+    "deviceHeartbeat": {
+      "type": "object", "required": ["protocolVersion", "kind", "deviceId", "sessionId", "sentAt", "status"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "device.heartbeat" },
+        "deviceId": { "$ref": "#/$defs/id" }, "sessionId": { "$ref": "#/$defs/id" },
+        "sentAt": { "type": "string", "format": "date-time" }, "status": { "type": "string", "enum": ["online", "degraded"] },
+        "capabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }, "additionalProperties": false
+    },
+    "deviceCommand": {
+      "type": "object", "required": ["protocolVersion", "kind", "requestId", "deviceId", "command", "arguments", "scopes", "expiresAt"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "device.command" },
+        "requestId": { "$ref": "#/$defs/id" }, "deviceId": { "$ref": "#/$defs/id" },
+        "command": { "type": "string", "maxLength": 128 }, "arguments": { "type": "object" },
+        "scopes": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "expiresAt": { "type": "string", "format": "date-time" }, "requiresConfirmation": { "type": "boolean" },
+        "idempotencyKey": { "$ref": "#/$defs/id" }
+      }, "additionalProperties": false
+    },
+    "deviceAck": {
+      "type": "object", "required": ["protocolVersion", "kind", "requestId", "deviceId", "status", "receivedAt"],
+      "properties": {
+        "protocolVersion": { "const": "1.0" }, "kind": { "const": "device.ack" },
+        "requestId": { "$ref": "#/$defs/id" }, "deviceId": { "$ref": "#/$defs/id" },
+        "status": { "type": "string", "enum": ["accepted", "completed", "rejected", "failed", "expired"] },
+        "result": {}, "error": { "type": "string", "maxLength": 1000 },
+        "receivedAt": { "type": "string", "format": "date-time" }
+      }, "additionalProperties": false
+    }
+  }
+}
