@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import LivingLogo from "./LivingLogo";
+import RoseInterface from "./RoseInterface";
 import { useCandidaStore } from "@/lib/store";
 import { speakCandida, moodFromLocalHour } from "@/lib/speak";
 
@@ -54,13 +53,6 @@ export default function AgentStage() {
   const shouldListenRef = useRef(true);
   const awakenLockRef = useRef(false);
   phaseRef.current = phase;
-
-  const logoMode =
-    phase === "awakening"
-      ? "awakening"
-      : phase === "armed" || phase === "speaking" || phase === "thinking"
-      ? "present"
-      : "listening";
 
   const resumeListen = useCallback(() => {
     shouldListenRef.current = true;
@@ -317,63 +309,7 @@ export default function AgentStage() {
     setStoreListening,
   ]);
 
-  const intensity =
-    phase === "awakening" || phase === "speaking"
-      ? 1.1
-      : phase === "armed" || phase === "thinking"
-      ? 1.05
-      : 1;
-
-  const glowStrong =
-    phase === "awakening" || phase === "speaking" || phase === "armed";
-
-  return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#030305]">
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: glowStrong
-            ? "radial-gradient(ellipse 50% 42% at 50% 44%, rgba(255,45,106,0.22) 0%, transparent 65%)"
-            : "radial-gradient(ellipse 50% 42% at 50% 44%, rgba(255,45,106,0.07) 0%, transparent 65%)",
-        }}
-        transition={{ duration: 1.2 }}
-      />
-
-      <AnimatePresence>
-        {phase === "awakening" && (
-          <motion.div
-            className="pointer-events-none absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-candida-magenta/80 to-transparent"
-            initial={{ top: "20%", opacity: 0 }}
-            animate={{ top: "80%", opacity: [0, 1, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
-          />
-        )}
-      </AnimatePresence>
-
-      <motion.div
-        className="relative z-10"
-        animate={{
-          scale: intensity,
-          filter:
-            phase === "awakening"
-              ? "brightness(1.3)"
-              : phase === "speaking"
-              ? "brightness(1.15)"
-              : "brightness(1)",
-        }}
-        transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <LivingLogo size="xl" label="CANDIDA" active mode={logoMode} />
-      </motion.div>
-
-      <div className="mt-10 min-h-[2rem] px-4 text-center">
-        {voiceError && (
-          <p className="text-xs text-amber-400/90">{voiceError}</p>
-        )}
-      </div>
-    </div>
-  );
+  return <RoseInterface phase={phase} interim={interim} voiceError={voiceError} />;
 }
 
 interface SpeechRecognition extends EventTarget {
